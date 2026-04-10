@@ -1,26 +1,34 @@
-import { Card, CardContent, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
 export default function StatCard({ label, value, color }) {
   return (
-    <Card>
-      <CardContent sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: "0.7rem",
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-          }}
-        >
-          {label}
-        </Typography>
-        <Typography
-          variant="h5"
-          sx={{ fontWeight: 600, color: color || "text.primary", mt: 0.25 }}
-        >
-          {value}
-        </Typography>
-      </CardContent>
-    </Card>
+    <Box
+      sx={{
+        bgcolor: "var(--color-background-secondary)",
+        borderRadius: "var(--border-radius-md)",
+        padding: "12px 14px",
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: "12px",
+          color: "var(--color-text-secondary)",
+          lineHeight: 1.4,
+          mb: 0.25,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          fontSize: "22px",
+          fontWeight: 500,
+          color: color || "var(--color-text-primary)",
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
   );
 }

@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Box,
   Typography,
-  Card,
   CardContent,
   TextField,
   Button,
@@ -43,43 +42,56 @@ export default function AdminNotices() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
+          mb: "14px",
         }}
       >
-        <Typography variant="h5">Notices</Typography>
-        <Button variant="contained" size="small" onClick={() => setOpen(true)}>
+        <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
+          Notices
+        </Typography>
+        <Button size="small" onClick={() => setOpen(true)}>
           New notice
         </Button>
       </Box>
       {notices.map((n) => (
-        <Card key={n._id} sx={{ mb: 1.5 }}>
-          <CardContent sx={{ py: 1.5 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
+        <Box
+          key={n._id}
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-lg)",
+            p: 2,
+            mb: "14px",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
+              {n.title}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => deleteNotice(n._id)}
+              sx={{ color: "var(--color-text-danger)", fontSize: "13px" }}
             >
-              <Typography variant="body1" fontWeight={500}>
-                {n.title}
-              </Typography>
-              <Button
-                size="small"
-                color="error"
-                onClick={() => deleteNotice(n._id)}
-              >
-                Delete
-              </Button>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              {n.body}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {new Date(n.createdAt).toLocaleDateString()}
-            </Typography>
-          </CardContent>
-        </Card>
+              Delete
+            </Button>
+          </Box>
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            {n.body}
+          </Typography>
+          <Typography
+            sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+          >
+            {new Date(n.createdAt).toLocaleDateString()}
+          </Typography>
+        </Box>
       ))}
 
       <Dialog

@@ -16,11 +16,41 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  const { principal, ...schoolData } = req.body;
+
+  // Create school first
   const school = await School.create({
-    ...req.body,
+    ...schoolData,
     municipalityId: req.user._id,
   });
-  res.status(201).json(school);
+
+  // Create principal user if provided
+  if (principal && principal.phone) {
+    const existing = await User.findOne({ phone: principal.phone });
+    if (existing) {
+      await School.findByIdAndDelete(school._id);
+      return res
+        .status(400)
+        .json({ message: "A user with that phone number already exists" });
+    }
+
+    const principalUser = await User.create({
+      name: principal.name,
+      email: principal.email || `principal_${school._id}@school.edu.np`,
+      password: principal.password || "changeme123",
+      role: "SCHOOL_ADMIN",
+      schoolId: school._id,
+      phone: principal.phone,
+    });
+    school.principalId = principalUser._id;
+    await school.save();
+  }
+
+  const populated = await School.findById(school._id).populate(
+    "principalId",
+    "name email phone",
+  );
+  res.status(201).json(populated);
 };
 
 exports.update = async (req, res) => {

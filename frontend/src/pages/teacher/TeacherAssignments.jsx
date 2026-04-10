@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Tabs,
-  Tab,
-  Chip,
-} from "@mui/material";
+import { Box, Typography, Button, Tabs, Tab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useNavigate } from "react-router-dom";
 import { useGetAssignmentsQuery } from "@/store/api/assignmentApi";
@@ -40,7 +31,9 @@ export default function TeacherAssignments() {
           mb: 2,
         }}
       >
-        <Typography variant="h5">Assignments</Typography>
+        <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
+          Assignments
+        </Typography>
         <Button
           size="small"
           startIcon={<AddIcon />}
@@ -58,55 +51,62 @@ export default function TeacherAssignments() {
       </Tabs>
 
       {filtered.map((a) => (
-        <Card key={a._id} sx={{ mb: 1 }}>
-          <CardContent
-            sx={{
-              py: 1.5,
-              px: 2,
-              "&:last-child": { pb: 1.5 },
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {a.title}
-              </Typography>
-              <Typography variant="caption">
-                {a.classId?.grade
-                  ? `Grade ${a.classId.grade}${a.classId.section}`
-                  : ""}{" "}
-                · {a.subjectId?.name} · Due {dayjs(a.dueDate).format("MMM D")}
-              </Typography>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                {a.gradedCount || 0}/{a.submissionCount || 0} graded
-              </Typography>
-              <StatusBadge status={a.status} />
-              {a.status === "published" && a.submissionCount > 0 && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  sx={{ fontSize: "0.7rem" }}
-                  onClick={() =>
-                    navigate(`/teacher/assignments/${a._id}/grade`)
-                  }
-                >
-                  Grade
-                </Button>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
+        <Box
+          key={a._id}
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-md)",
+            mb: 1,
+            py: 1.5,
+            px: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+              {a.title}
+            </Typography>
+            <Typography
+              sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+            >
+              {a.classId?.grade
+                ? `Grade ${a.classId.grade}${a.classId.section}`
+                : ""}{" "}
+              · {a.subjectId?.name} · Due {dayjs(a.dueDate).format("MMM D")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography
+              sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+            >
+              {a.gradedCount || 0}/{a.submissionCount || 0} graded
+            </Typography>
+            <StatusBadge status={a.status} />
+            {a.status === "published" && a.submissionCount > 0 && (
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{ fontSize: "11px" }}
+                onClick={() => navigate(`/teacher/assignments/${a._id}/grade`)}
+              >
+                Grade
+              </Button>
+            )}
+          </Box>
+        </Box>
       ))}
 
       {filtered.length === 0 && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 4 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 4,
+          }}
         >
           No assignments
         </Typography>

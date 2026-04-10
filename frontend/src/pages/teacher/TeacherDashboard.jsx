@@ -43,7 +43,7 @@ export default function TeacherDashboard() {
     grade: `${s.className || "10"} ${s.section || String.fromCharCode(65 + i)}`,
     subject: s.name,
     time: `${10 + i * 2}:00 ${i < 2 ? "AM" : "PM"}`,
-    color: i % 2 === 0 ? "#16a34a" : "#2563eb",
+    color: i % 2 === 0 ? "var(--color-text-success)" : "var(--color-text-info)",
   }));
 
   const pendingTasks = [
@@ -53,7 +53,7 @@ export default function TeacherDashboard() {
       .map((a) => ({
         label: `Grade assignments — ${a.className || "Class"}`,
         detail: `${a.submissionCount - a.gradedCount} left`,
-        color: "#d97706",
+        color: "var(--color-text-warning)",
       })),
     ...(chapters || [])
       .filter((c) => c.status === "draft")
@@ -61,7 +61,7 @@ export default function TeacherDashboard() {
       .map((c) => ({
         label: `Add ${c.title} notes — Class ${c.className || ""}`,
         detail: "Draft",
-        color: "#16a34a",
+        color: "var(--color-text-success)",
       })),
   ];
 
@@ -99,10 +99,12 @@ export default function TeacherDashboard() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
             Good morning, {user?.name?.split(" ")[0]} sir
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
             {dayName} · {todaysClasses.length} classes today
           </Typography>
         </Box>
@@ -122,11 +124,15 @@ export default function TeacherDashboard() {
           <StatCard
             label="Content uploaded"
             value={contentUploaded}
-            color="#16a34a"
+            color="var(--color-text-success)"
           />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
-          <StatCard label="Avg attendance" value="88%" color="#16a34a" />
+          <StatCard
+            label="Avg attendance"
+            value="88%"
+            color="var(--color-text-success)"
+          />
         </Grid>
       </Grid>
 
@@ -134,7 +140,7 @@ export default function TeacherDashboard() {
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+              <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
                 Today's classes
               </Typography>
               {todaysClasses.map((c, i) => (
@@ -147,7 +153,7 @@ export default function TeacherDashboard() {
                     py: 1,
                     borderBottom:
                       i < todaysClasses.length - 1
-                        ? "1px solid rgba(0,0,0,0.05)"
+                        ? "0.5px solid var(--color-border-tertiary)"
                         : "none",
                   }}
                 >
@@ -156,23 +162,35 @@ export default function TeacherDashboard() {
                       label={c.grade}
                       size="small"
                       sx={{
-                        bgcolor: `${c.color}14`,
-                        color: c.color,
-                        fontWeight: 600,
-                        fontSize: "0.7rem",
+                        bgcolor: "var(--color-background-info)",
+                        color: "var(--color-text-info)",
+                        fontWeight: 500,
+                        fontSize: "11px",
                         height: 24,
-                        borderRadius: 1,
+                        borderRadius: "4px",
                       }}
                     />
-                    <Typography variant="body2">{c.subject}</Typography>
+                    <Typography sx={{ fontSize: "13px" }}>
+                      {c.subject}
+                    </Typography>
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
                     {c.time}
                   </Typography>
                 </Box>
               ))}
               {todaysClasses.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  sx={{
+                    fontSize: "13px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
                   No classes today
                 </Typography>
               )}
@@ -183,7 +201,7 @@ export default function TeacherDashboard() {
         <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+              <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
                 Pending tasks
               </Typography>
               {pendingTasks.map((t, i) => (
@@ -196,7 +214,7 @@ export default function TeacherDashboard() {
                     py: 1,
                     borderBottom:
                       i < pendingTasks.length - 1
-                        ? "1px solid rgba(0,0,0,0.05)"
+                        ? "0.5px solid var(--color-border-tertiary)"
                         : "none",
                   }}
                 >
@@ -210,19 +228,27 @@ export default function TeacherDashboard() {
                         flexShrink: 0,
                       }}
                     />
-                    <Typography variant="body2">{t.label}</Typography>
+                    <Typography sx={{ fontSize: "13px" }}>{t.label}</Typography>
                   </Box>
                   <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ whiteSpace: "nowrap", ml: 1 }}
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                      whiteSpace: "nowrap",
+                      ml: 1,
+                    }}
                   >
                     {t.detail}
                   </Typography>
                 </Box>
               ))}
               {pendingTasks.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  sx={{
+                    fontSize: "13px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
                   All caught up
                 </Typography>
               )}
@@ -233,7 +259,7 @@ export default function TeacherDashboard() {
 
       <Card>
         <CardContent>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
             Continue where you left off
           </Typography>
           <Box sx={{ display: "flex", gap: 2, overflowX: "auto" }}>
@@ -245,11 +271,11 @@ export default function TeacherDashboard() {
                   alignItems: "center",
                   gap: 1.5,
                   p: 1.5,
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  borderRadius: 2,
+                  border: "0.5px solid var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-md)",
                   minWidth: 240,
                   cursor: "pointer",
-                  "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                  "&:hover": { bgcolor: "var(--color-background-secondary)" },
                 }}
               >
                 <Box
@@ -257,21 +283,26 @@ export default function TeacherDashboard() {
                     width: 36,
                     height: 36,
                     borderRadius: 1.5,
-                    bgcolor: "#fff3e0",
+                    bgcolor: "var(--color-background-warning)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <DescriptionOutlinedIcon
-                    sx={{ fontSize: 18, color: "#d97706" }}
+                    sx={{ fontSize: 18, color: "var(--color-text-warning)" }}
                   />
                 </Box>
                 <Box>
-                  <Typography variant="body2" fontWeight={500} noWrap>
+                  <Typography sx={{ fontSize: "13px", fontWeight: 500 }} noWrap>
                     Ch. {drafts.indexOf(c) + 1} · {c.title}
                   </Typography>
-                  <Typography variant="caption">
+                  <Typography
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
                     Class {c.className || "10"} · Draft
                   </Typography>
                 </Box>
@@ -285,11 +316,11 @@ export default function TeacherDashboard() {
                   alignItems: "center",
                   gap: 1.5,
                   p: 1.5,
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  borderRadius: 2,
+                  border: "0.5px solid var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-md)",
                   minWidth: 240,
                   cursor: "pointer",
-                  "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                  "&:hover": { bgcolor: "var(--color-background-secondary)" },
                 }}
               >
                 <Box
@@ -297,21 +328,26 @@ export default function TeacherDashboard() {
                     width: 36,
                     height: 36,
                     borderRadius: 1.5,
-                    bgcolor: "#e3f2fd",
+                    bgcolor: "var(--color-background-info)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <AssignmentOutlinedIcon
-                    sx={{ fontSize: 18, color: "#2563eb" }}
+                    sx={{ fontSize: 18, color: "var(--color-text-info)" }}
                   />
                 </Box>
                 <Box>
-                  <Typography variant="body2" fontWeight={500} noWrap>
+                  <Typography sx={{ fontSize: "13px", fontWeight: 500 }} noWrap>
                     Assignment · {a.title}
                   </Typography>
-                  <Typography variant="caption">
+                  <Typography
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
                     {a.className || "Class"} · Due{" "}
                     {a.dueDate ? dayjs(a.dueDate).format("dddd") : ""}
                   </Typography>
@@ -319,7 +355,9 @@ export default function TeacherDashboard() {
               </Box>
             ))}
             {drafts.length === 0 && dueAssignments.length === 0 && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+              >
                 No pending items
               </Typography>
             )}

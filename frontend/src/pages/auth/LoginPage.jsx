@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import {
-  Box,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Alert,
-} from "@mui/material";
+import { Box, TextField, Button, Typography, Alert } from "@mui/material";
 import { useLoginMutation } from "@/store/api/authApi";
 import { setCredentials } from "@/store/slices/authSlice";
 
@@ -50,48 +42,56 @@ export default function LoginPage() {
         bgcolor: "background.default",
       }}
     >
-      <Card sx={{ width: 380, p: 1 }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ mb: 0.5 }}>
-            Sign in
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Nepal municipality school platform
-          </Typography>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2, fontSize: "0.8rem" }}>
-              {error}
-            </Alert>
-          )}
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              label="Email"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-            <TextField
-              label="Password"
-              type="password"
-              fullWidth
-              sx={{ mb: 3 }}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing in…" : "Sign in"}
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+      <Box
+        sx={{
+          width: 380,
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          p: 4,
+        }}
+      >
+        <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.5 }}>
+          Sign in
+        </Typography>
+        <Typography
+          sx={{ fontSize: "13px", color: "var(--color-text-secondary)", mb: 3 }}
+        >
+          Nepal municipality school platform
+        </Typography>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: "0.8rem" }}>
+            {error}
+          </Alert>
+        )}
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField
+            label="Email"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <TextField
+            label="Password"
+            type="password"
+            fullWidth
+            sx={{ mb: 3 }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={isLoading}
+          >
+            {isLoading ? "Signing in…" : "Sign in"}
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }

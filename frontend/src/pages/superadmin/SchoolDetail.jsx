@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Typography, Card, CardContent, Button } from "@mui/material";
+import { Box, Typography, Button } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import {
   useGetSchoolQuery,
@@ -25,19 +25,31 @@ export default function SchoolDetail() {
       >
         Back
       </Button>
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6">{school.name}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {school.address}
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          p: 2,
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
+          {school.name}
+        </Typography>
+        <Typography
+          sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+        >
+          {school.address}
+        </Typography>
+        {school.phone && (
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            {school.phone}
           </Typography>
-          {school.phone && (
-            <Typography variant="body2" color="text.secondary">
-              {school.phone}
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </Box>
 
       <Box
         sx={{

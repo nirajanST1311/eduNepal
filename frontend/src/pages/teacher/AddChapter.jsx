@@ -5,8 +5,6 @@ import {
   Typography,
   TextField,
   Button,
-  Card,
-  CardContent,
   Select,
   MenuItem,
   FormControl,
@@ -93,114 +91,133 @@ export default function AddChapter() {
       >
         Back to content
       </Button>
-      <Typography variant="h5" sx={{ mb: 3 }}>
+      <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 3 }}>
         Add chapter
       </Typography>
 
       {step === 1 && (
-        <Card>
-          <CardContent>
-            <Typography variant="subtitle2" sx={{ mb: 2 }}>
-              Select class and subject
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-              <FormControl sx={{ minWidth: 180 }}>
-                <InputLabel>Class</InputLabel>
-                <Select
-                  value={classId}
-                  label="Class"
-                  onChange={(e) => {
-                    setClassId(e.target.value);
-                    setSubjectId("");
-                  }}
-                >
-                  {(classes || []).map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      Grade {c.grade} {c.section}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 180 }}>
-                <InputLabel>Subject</InputLabel>
-                <Select
-                  value={subjectId}
-                  label="Subject"
-                  onChange={(e) => setSubjectId(e.target.value)}
-                  disabled={!classId}
-                >
-                  {(subjects || []).map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Button
-              variant="contained"
-              disabled={!subjectId}
-              onClick={() => setStep(2)}
-            >
-              Next
-            </Button>
-          </CardContent>
-        </Card>
+        <Box
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-lg)",
+            p: 2,
+          }}
+        >
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+            Select class and subject
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>Class</InputLabel>
+              <Select
+                value={classId}
+                label="Class"
+                onChange={(e) => {
+                  setClassId(e.target.value);
+                  setSubjectId("");
+                }}
+              >
+                {(classes || []).map((c) => (
+                  <MenuItem key={c._id} value={c._id}>
+                    Grade {c.grade} {c.section}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>Subject</InputLabel>
+              <Select
+                value={subjectId}
+                label="Subject"
+                onChange={(e) => setSubjectId(e.target.value)}
+                disabled={!classId}
+              >
+                {(subjects || []).map((s) => (
+                  <MenuItem key={s._id} value={s._id}>
+                    {s.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          <Button
+            variant="contained"
+            disabled={!subjectId}
+            onClick={() => setStep(2)}
+          >
+            Next
+          </Button>
+        </Box>
       )}
 
       {step === 2 && (
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Typography variant="subtitle2" sx={{ mb: 2 }}>
-              Chapter details
-            </Typography>
-            <TextField
-              label="Chapter title"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={2}
-              sx={{ mb: 2 }}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <TextField
-              label="Order"
-              type="number"
-              sx={{ width: 100 }}
-              value={order}
-              onChange={(e) => setOrder(Number(e.target.value))}
-            />
-            <Button
-              variant="contained"
-              sx={{ ml: 2 }}
-              disabled={!title.trim()}
-              onClick={() => setStep(3)}
-            >
-              Next
-            </Button>
-          </CardContent>
-        </Card>
+        <Box
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-lg)",
+            mb: 2,
+            p: 2,
+          }}
+        >
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+            Chapter details
+          </Typography>
+          <TextField
+            label="Chapter title"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <TextField
+            label="Description"
+            fullWidth
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <TextField
+            label="Order"
+            type="number"
+            sx={{ width: 100 }}
+            value={order}
+            onChange={(e) => setOrder(Number(e.target.value))}
+          />
+          <Button
+            variant="contained"
+            sx={{ ml: 2 }}
+            disabled={!title.trim()}
+            onClick={() => setStep(3)}
+          >
+            Next
+          </Button>
+        </Box>
       )}
 
       {step === 3 && (
         <>
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                {title}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {description}
-              </Typography>
-            </CardContent>
-          </Card>
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-md)",
+              mb: 2,
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 0.5 }}>
+              {title}
+            </Typography>
+            <Typography
+              sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+            >
+              {description}
+            </Typography>
+          </Box>
 
           <Box
             sx={{
@@ -210,83 +227,94 @@ export default function AddChapter() {
               mb: 2,
             }}
           >
-            <Typography variant="subtitle2">Topics</Typography>
+            <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+              Topics
+            </Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={addTopic}>
               Add topic
             </Button>
           </Box>
 
           {topics.map((t, i) => (
-            <Card key={i} sx={{ mb: 1.5 }}>
-              <CardContent sx={{ py: 1.5 }}>
-                <Box
-                  sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}
-                >
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      label="Topic title"
-                      size="small"
-                      fullWidth
-                      sx={{ mb: 1.5 }}
-                      value={t.title}
-                      onChange={(e) => updateTopic(i, "title", e.target.value)}
-                    />
-                    <FormControl
-                      size="small"
-                      sx={{ minWidth: 120, mb: 1.5, mr: 1.5 }}
-                    >
-                      <InputLabel>Type</InputLabel>
-                      <Select
-                        value={t.type}
-                        label="Type"
-                        onChange={(e) => updateTopic(i, "type", e.target.value)}
-                      >
-                        <MenuItem value="note">Notes</MenuItem>
-                        <MenuItem value="video">Video</MenuItem>
-                        <MenuItem value="pdf">PDF</MenuItem>
-                        <MenuItem value="audio">Audio</MenuItem>
-                      </Select>
-                    </FormControl>
-                    {t.type === "note" && (
-                      <TextField
-                        label="Content"
-                        multiline
-                        rows={3}
-                        fullWidth
-                        value={t.content}
-                        onChange={(e) =>
-                          updateTopic(i, "content", e.target.value)
-                        }
-                      />
-                    )}
-                    {t.type !== "note" && (
-                      <TextField
-                        label="File URL / YouTube link"
-                        fullWidth
-                        value={t.fileUrl}
-                        onChange={(e) =>
-                          updateTopic(i, "fileUrl", e.target.value)
-                        }
-                      />
-                    )}
-                  </Box>
-                  <IconButton
+            <Box
+              key={i}
+              sx={{
+                bgcolor: "var(--color-background-primary)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                borderRadius: "var(--border-radius-md)",
+                mb: 1.5,
+                py: 1.5,
+                px: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                <Box sx={{ flex: 1 }}>
+                  <TextField
+                    label="Topic title"
                     size="small"
-                    color="error"
-                    onClick={() => removeTopic(i)}
+                    fullWidth
+                    sx={{ mb: 1.5 }}
+                    value={t.title}
+                    onChange={(e) => updateTopic(i, "title", e.target.value)}
+                  />
+                  <FormControl
+                    size="small"
+                    sx={{ minWidth: 120, mb: 1.5, mr: 1.5 }}
                   >
-                    <DeleteIcon />
-                  </IconButton>
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                      value={t.type}
+                      label="Type"
+                      onChange={(e) => updateTopic(i, "type", e.target.value)}
+                    >
+                      <MenuItem value="note">Notes</MenuItem>
+                      <MenuItem value="video">Video</MenuItem>
+                      <MenuItem value="pdf">PDF</MenuItem>
+                      <MenuItem value="audio">Audio</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {t.type === "note" && (
+                    <TextField
+                      label="Content"
+                      multiline
+                      rows={3}
+                      fullWidth
+                      value={t.content}
+                      onChange={(e) =>
+                        updateTopic(i, "content", e.target.value)
+                      }
+                    />
+                  )}
+                  {t.type !== "note" && (
+                    <TextField
+                      label="File URL / YouTube link"
+                      fullWidth
+                      value={t.fileUrl}
+                      onChange={(e) =>
+                        updateTopic(i, "fileUrl", e.target.value)
+                      }
+                    />
+                  )}
                 </Box>
-              </CardContent>
-            </Card>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => removeTopic(i)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </Box>
           ))}
 
           {topics.length === 0 && (
             <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: "center", py: 3 }}
+              sx={{
+                fontSize: "13px",
+                color: "var(--color-text-secondary)",
+                textAlign: "center",
+                py: 3,
+              }}
             >
               Add topics to this chapter
             </Typography>

@@ -12,9 +12,9 @@ export default function AppLayout() {
         sx={{
           flexGrow: 1,
           pt: 0,
-          pb: 3,
-          px: 3,
-          bgcolor: "#faf8f4",
+          pb: "22px",
+          px: "22px",
+          bgcolor: "var(--color-background-tertiary)",
           minHeight: "100vh",
           overflow: "auto",
         }}

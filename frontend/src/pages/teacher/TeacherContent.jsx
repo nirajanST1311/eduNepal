@@ -2,13 +2,10 @@ import { useState } from "react";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Select,
   MenuItem,
   FormControl,
   Button,
-  Chip,
   LinearProgress,
   IconButton,
 } from "@mui/material";
@@ -58,10 +55,12 @@ export default function TeacherContent() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
             Content
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
             {selectedClass && selectedSubject
               ? `Class ${selectedClass.grade} · ${selectedSubject.name}`
               : "Select a class and subject"}
@@ -81,7 +80,7 @@ export default function TeacherContent() {
               setClassId(e.target.value);
               setSubjectId("");
             }}
-            sx={{ bgcolor: "#fff" }}
+            sx={{ bgcolor: "var(--color-background-primary)" }}
           >
             <MenuItem value="" disabled>
               Class
@@ -99,7 +98,7 @@ export default function TeacherContent() {
             displayEmpty
             onChange={(e) => setSubjectId(e.target.value)}
             disabled={!classId}
-            sx={{ bgcolor: "#fff" }}
+            sx={{ bgcolor: "var(--color-background-primary)" }}
           >
             <MenuItem value="" disabled>
               Subject
@@ -128,36 +127,48 @@ export default function TeacherContent() {
 
       {subjectId && (
         <>
-          <Card sx={{ mb: 3 }}>
-            <CardContent sx={{ py: 1.5 }}>
-              <Box
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-lg)",
+              mb: 3,
+              py: 1.5,
+              px: 2,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1,
+              }}
+            >
+              <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                Syllabus progress
+              </Typography>
+              <Typography
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mb: 1,
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color:
+                    progress > 50
+                      ? "var(--color-text-success)"
+                      : "var(--color-text-secondary)",
                 }}
               >
-                <Typography variant="subtitle2" fontWeight={500}>
-                  Syllabus progress
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={500}
-                  color={progress > 50 ? "#16a34a" : "text.secondary"}
-                >
-                  {progress}% complete
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={progress}
-                color="success"
-              />
-            </CardContent>
-          </Card>
+                {progress}% complete
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              color="success"
+            />
+          </Box>
 
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
             Chapters
           </Typography>
 
@@ -170,83 +181,105 @@ export default function TeacherContent() {
                   : "Not started";
             const isStarted = ch.status !== "not_started";
             return (
-              <Card key={ch._id} sx={{ mb: 1.5 }}>
-                <CardContent
-                  sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}
-                >
+              <Box
+                key={ch._id}
+                sx={{
+                  bgcolor: "var(--color-background-primary)",
+                  border: "0.5px solid var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-md)",
+                  mb: 1.5,
+                  py: 1.5,
+                  px: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
                   <Box
-                    sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      bgcolor: "var(--color-background-secondary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 500,
+                      fontSize: "13px",
+                      color: "var(--color-text-secondary)",
+                      flexShrink: 0,
+                      mt: 0.25,
+                    }}
                   >
-                    <Box
+                    {i + 1}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      sx={{ fontSize: "13px", fontWeight: 500, mb: 0.25 }}
+                    >
+                      {ch.title}
+                    </Typography>
+                    <Typography
                       sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        bgcolor: "grey.100",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 600,
-                        fontSize: "0.85rem",
-                        color: "text.secondary",
-                        flexShrink: 0,
-                        mt: 0.25,
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
                       }}
                     >
-                      {i + 1}
+                      {ch.topicCount || 0} topic
+                      {ch.topicCount !== 1 ? "s" : ""} · {statusLabel}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 0.5, mt: 1 }}>
+                      {typeChips.map((t) => {
+                        const key = t.toLowerCase();
+                        const has = ch.contentTypes?.includes(key);
+                        return (
+                          <Box
+                            component="span"
+                            key={t}
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              fontSize: "11px",
+                              height: 22,
+                              px: 1,
+                              borderRadius: "4px",
+                              fontWeight: 500,
+                              bgcolor: has
+                                ? "var(--color-background-success)"
+                                : "transparent",
+                              color: has
+                                ? "var(--color-text-success)"
+                                : "var(--color-text-secondary)",
+                              border: has
+                                ? "none"
+                                : "0.5px solid var(--color-border-tertiary)",
+                            }}
+                          >
+                            {t}
+                          </Box>
+                        );
+                      })}
                     </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 600, mb: 0.25 }}
-                      >
-                        {ch.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {ch.topicCount || 0} topic
-                        {ch.topicCount !== 1 ? "s" : ""} · {statusLabel}
-                      </Typography>
-                      <Box sx={{ display: "flex", gap: 0.5, mt: 1 }}>
-                        {typeChips.map((t) => {
-                          const key = t.toLowerCase();
-                          const has = ch.contentTypes?.includes(key);
-                          return (
-                            <Chip
-                              key={t}
-                              label={t}
-                              size="small"
-                              sx={{
-                                fontSize: "0.65rem",
-                                height: 22,
-                                fontWeight: 500,
-                                bgcolor: has ? "#dcfce7" : "transparent",
-                                color: has ? "#16a34a" : "#94a3b8",
-                                border: has ? "none" : "1px solid #e2e8f0",
-                              }}
-                            />
-                          );
-                        })}
-                      </Box>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      sx={{ minWidth: 60, fontSize: "0.8rem", flexShrink: 0 }}
-                      onClick={() => navigate(`/teacher/content/${ch._id}`)}
-                    >
-                      {isStarted ? "Edit" : "Start"}
-                    </Button>
                   </Box>
-                </CardContent>
-              </Card>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{ minWidth: 60, fontSize: "12px", flexShrink: 0 }}
+                    onClick={() => navigate(`/teacher/content/${ch._id}`)}
+                  >
+                    {isStarted ? "Edit" : "Start"}
+                  </Button>
+                </Box>
+              </Box>
             );
           })}
 
           {(chapters || []).length === 0 && (
             <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: "center", py: 4 }}
+              sx={{
+                fontSize: "13px",
+                color: "var(--color-text-secondary)",
+                textAlign: "center",
+                py: 4,
+              }}
             >
               No chapters yet — add one to get started
             </Typography>
@@ -256,9 +289,12 @@ export default function TeacherContent() {
 
       {!subjectId && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 6 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 6,
+          }}
         >
           Select a class and subject to view content
         </Typography>

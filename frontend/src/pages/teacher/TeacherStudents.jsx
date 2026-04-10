@@ -3,13 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   FormControl,
   Select,
   MenuItem,
   Avatar,
-  Chip,
   IconButton,
 } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
@@ -18,13 +15,13 @@ import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetStudentsQuery } from "@/store/api/studentApi";
 
 const avatarColors = [
-  "#2563eb",
-  "#059669",
+  "var(--color-text-info)",
+  "var(--color-text-success)",
   "#7c3aed",
   "#0891b2",
   "#be185d",
-  "#d97706",
-  "#dc2626",
+  "var(--color-text-warning)",
+  "var(--color-text-danger)",
 ];
 function getColor(name) {
   let h = 0;
@@ -66,10 +63,12 @@ export default function TeacherStudents() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
             Students
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
             {classLabel
               ? `${classLabel} · ${students.length} students`
               : "Select a class"}
@@ -85,7 +84,7 @@ export default function TeacherStudents() {
           value={classId}
           displayEmpty
           onChange={(e) => setClassId(e.target.value)}
-          sx={{ bgcolor: "#fff" }}
+          sx={{ bgcolor: "var(--color-background-primary)" }}
         >
           <MenuItem value="" disabled>
             Select class
@@ -99,19 +98,25 @@ export default function TeacherStudents() {
       </FormControl>
 
       {classId && students.length > 0 && (
-        <Card>
-          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+        <Box
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-lg)",
+          }}
+        >
+          <Box sx={{ p: 0 }}>
             {students.map((s, i) => {
               const pct = s.attendancePercent ?? null;
               const low = pct !== null && pct < 75;
               const attColor =
                 pct === null
-                  ? "text.secondary"
+                  ? "var(--color-text-secondary)"
                   : pct >= 90
-                    ? "#16a34a"
+                    ? "var(--color-text-success)"
                     : pct >= 75
-                      ? "#d97706"
-                      : "#dc2626";
+                      ? "var(--color-text-warning)"
+                      : "var(--color-text-danger)";
               const initials = getInitials(s.name);
               const bgColor = getColor(s.name);
               return (
@@ -127,9 +132,9 @@ export default function TeacherStudents() {
                     cursor: "pointer",
                     borderBottom:
                       i < students.length - 1
-                        ? "1px solid rgba(0,0,0,0.05)"
+                        ? "0.5px solid var(--color-border-tertiary)"
                         : "none",
-                    "&:hover": { bgcolor: "rgba(0,0,0,0.015)" },
+                    "&:hover": { bgcolor: "var(--color-background-secondary)" },
                   }}
                 >
                   <Avatar
@@ -137,7 +142,7 @@ export default function TeacherStudents() {
                       width: 40,
                       height: 40,
                       fontSize: 14,
-                      fontWeight: 600,
+                      fontWeight: 500,
                       bgcolor: bgColor,
                     }}
                   >
@@ -145,52 +150,71 @@ export default function TeacherStudents() {
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                         {s.name}
                       </Typography>
                       {low && (
-                        <Chip
-                          label="Needs attention"
-                          size="small"
+                        <Box
+                          component="span"
                           sx={{
-                            bgcolor: "#fef3c7",
-                            color: "#92400e",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            bgcolor: "var(--color-background-warning)",
+                            color: "var(--color-text-warning)",
                             fontWeight: 500,
-                            fontSize: "0.65rem",
-                            height: 20,
+                            fontSize: "11px",
                           }}
-                        />
+                        >
+                          Needs attention
+                        </Box>
                       )}
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       Roll {s.rollNumber || String(i + 1).padStart(2, "0")} ·{" "}
                       {classLabel}
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: "right", flexShrink: 0 }}>
                     <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      sx={{ color: attColor }}
+                      sx={{
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: attColor,
+                      }}
                     >
                       {pct !== null ? `${pct}%` : "—"}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       Attendance
                     </Typography>
                   </Box>
                 </Box>
               );
             })}
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       )}
 
       {classId && students.length === 0 && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 6 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 6,
+          }}
         >
           No students in this class
         </Typography>
@@ -198,9 +222,12 @@ export default function TeacherStudents() {
 
       {!classId && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 6 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 6,
+          }}
         >
           Select a class to view students
         </Typography>

@@ -20,6 +20,8 @@ const attendanceRoutes = require("./routes/attendance.routes");
 const noticeRoutes = require("./routes/notice.routes");
 const studentRoutes = require("./routes/student.routes");
 const uploadRoutes = require("./routes/upload.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const userRoutes = require("./routes/user.routes");
 
 const errorHandler = require("./middleware/errorHandler");
 
@@ -51,6 +53,8 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(errorHandler);
 

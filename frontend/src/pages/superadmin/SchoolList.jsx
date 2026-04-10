@@ -3,11 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   TextField,
   Button,
-  Chip,
   MenuItem,
   Select,
   Dialog,
@@ -33,15 +30,31 @@ const TYPE_OPTIONS = [{ value: "all", label: "All types" }];
 // Demo status logic for UI only
 function getStatus(school) {
   if (school.name?.toLowerCase().includes("kopundol"))
-    return { label: "At risk", color: "#dc2626" };
+    return {
+      label: "At risk",
+      color: "var(--color-text-danger)",
+      bgcolor: "var(--color-background-danger)",
+    };
   if (
     school.name?.toLowerCase().includes("thaiba") ||
     school.name?.toLowerCase().includes("sainbu")
   )
-    return { label: "Monitor", color: "#fbbf24" };
+    return {
+      label: "Monitor",
+      color: "var(--color-text-warning)",
+      bgcolor: "var(--color-background-warning)",
+    };
   if (school.name?.toLowerCase().includes("imadol"))
-    return { label: "No principal", color: "#fbbf24" };
-  return { label: "Active", color: "#22c55e" };
+    return {
+      label: "No principal",
+      color: "var(--color-text-warning)",
+      bgcolor: "var(--color-background-warning)",
+    };
+  return {
+    label: "Active",
+    color: "var(--color-text-success)",
+    bgcolor: "var(--color-background-success)",
+  };
 }
 
 export default function SchoolList() {
@@ -81,14 +94,24 @@ export default function SchoolList() {
         }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={600}>
+          <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
             Schools
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography
+            sx={{
+              fontSize: "13px",
+              color: "var(--color-text-secondary)",
+              mt: 0.5,
+            }}
+          >
             {schools.length} schools · Lalitpur Metropolitan City
           </Typography>
         </Box>
-        <Button variant="contained" size="small" onClick={() => setOpen(true)}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => navigate("/superadmin/schools/add")}
+        >
           + Add school
         </Button>
       </Box>
@@ -132,17 +155,18 @@ export default function SchoolList() {
           const stat = getStatus(s);
           return (
             <Grid item xs={12} sm={6} md={4} lg={3} key={s._id}>
-              <Card
-                variant="outlined"
+              <Box
                 sx={{
+                  bgcolor: "var(--color-background-primary)",
+                  border: "0.5px solid var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-lg)",
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
-                  borderColor: stat.color,
                 }}
               >
-                <CardContent sx={{ pb: 1.5 }}>
+                <Box sx={{ p: 2, pb: 1.5 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -151,91 +175,114 @@ export default function SchoolList() {
                       mb: 1,
                     }}
                   >
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight={600}
-                      sx={{ fontSize: "1rem" }}
-                    >
+                    <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
                       {s.name}
                     </Typography>
-                    <Chip
-                      label={stat.label}
-                      size="small"
+                    <Box
+                      component="span"
                       sx={{
-                        bgcolor: stat.color + "22",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        bgcolor: stat.bgcolor,
                         color: stat.color,
-                        fontWeight: 600,
-                        fontSize: "0.7rem",
-                        height: 22,
                       }}
-                    />
+                    >
+                      {stat.label}
+                    </Box>
                   </Box>
                   <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mb: 0.5, display: "block" }}
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                      mb: 0.5,
+                      display: "block",
+                    }}
                   >
                     {s.address || "—"}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
                         Teachers
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                         —
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
                         Students
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                         —
                       </Typography>
                     </Box>
                   </Box>
                   <Box sx={{ display: "flex", gap: 2 }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
                         Attendance
                       </Typography>
                       <Typography
-                        variant="body2"
-                        fontWeight={600}
                         sx={{
+                          fontSize: "13px",
+                          fontWeight: 500,
                           color:
                             stat.label === "At risk"
-                              ? "#dc2626"
+                              ? "var(--color-text-danger)"
                               : stat.label === "Monitor"
-                                ? "#d97706"
-                                : "#16a34a",
+                                ? "var(--color-text-warning)"
+                                : "var(--color-text-success)",
                         }}
                       >
                         —
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
                         Content
                       </Typography>
                       <Typography
-                        variant="body2"
-                        fontWeight={600}
                         sx={{
+                          fontSize: "13px",
+                          fontWeight: 500,
                           color:
                             stat.label === "At risk"
-                              ? "#dc2626"
+                              ? "var(--color-text-danger)"
                               : stat.label === "Monitor"
-                                ? "#d97706"
-                                : "#16a34a",
+                                ? "var(--color-text-warning)"
+                                : "var(--color-text-success)",
                         }}
                       >
                         —
                       </Typography>
                     </Box>
                   </Box>
-                </CardContent>
+                </Box>
                 <Box sx={{ display: "flex", gap: 1, px: 2, pb: 1.5 }}>
                   <Button
                     size="small"
@@ -260,7 +307,7 @@ export default function SchoolList() {
                     </Button>
                   )}
                 </Box>
-              </Card>
+              </Box>
             </Grid>
           );
         })}

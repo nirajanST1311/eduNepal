@@ -5,8 +5,6 @@ import {
   Typography,
   TextField,
   Button,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   Select,
@@ -55,114 +53,121 @@ export default function CreateAssignment() {
       >
         Back
       </Button>
-      <Typography variant="h5" sx={{ mb: 3 }}>
+      <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 3 }}>
         New assignment
       </Typography>
-      <Card>
-        <CardContent>
-          <TextField
-            label="Title"
-            fullWidth
-            sx={{ mb: 2 }}
-            value={form.title}
-            onChange={set("title")}
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-            value={form.description}
-            onChange={set("description")}
-          />
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-            <FormControl sx={{ minWidth: 160 }}>
-              <InputLabel>Class</InputLabel>
-              <Select
-                value={form.classId}
-                label="Class"
-                onChange={(e) =>
-                  setForm({ ...form, classId: e.target.value, subjectId: "" })
-                }
-              >
-                {(classes || []).map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    Grade {c.grade} {c.section}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl sx={{ minWidth: 160 }}>
-              <InputLabel>Subject</InputLabel>
-              <Select
-                value={form.subjectId}
-                label="Subject"
-                onChange={set("subjectId")}
-                disabled={!form.classId}
-              >
-                {(subjects || []).map((s) => (
-                  <MenuItem key={s._id} value={s._id}>
-                    {s.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-            <TextField
-              label="Due date"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={form.dueDate}
-              onChange={set("dueDate")}
-            />
-            <TextField
-              label="Max marks"
-              type="number"
-              sx={{ width: 120 }}
-              value={form.maxMarks}
-              onChange={set("maxMarks")}
-            />
-          </Box>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={form.allowLate}
-                onChange={(e) =>
-                  setForm({ ...form, allowLate: e.target.checked })
-                }
-              />
-            }
-            label={
-              <Typography variant="body2">Allow late submissions</Typography>
-            }
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <Button
-              variant="outlined"
-              onClick={() => handleSubmit("draft")}
-              disabled={isLoading || !form.title}
-            >
-              Save as draft
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => handleSubmit("published")}
-              disabled={
-                isLoading ||
-                !form.title ||
-                !form.classId ||
-                !form.subjectId ||
-                !form.dueDate
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          p: 2,
+        }}
+      >
+        <TextField
+          label="Title"
+          fullWidth
+          sx={{ mb: 2 }}
+          value={form.title}
+          onChange={set("title")}
+        />
+        <TextField
+          label="Description"
+          fullWidth
+          multiline
+          rows={3}
+          sx={{ mb: 2 }}
+          value={form.description}
+          onChange={set("description")}
+        />
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+          <FormControl sx={{ minWidth: 160 }}>
+            <InputLabel>Class</InputLabel>
+            <Select
+              value={form.classId}
+              label="Class"
+              onChange={(e) =>
+                setForm({ ...form, classId: e.target.value, subjectId: "" })
               }
             >
-              Publish
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+              {(classes || []).map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  Grade {c.grade} {c.section}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 160 }}>
+            <InputLabel>Subject</InputLabel>
+            <Select
+              value={form.subjectId}
+              label="Subject"
+              onChange={set("subjectId")}
+              disabled={!form.classId}
+            >
+              {(subjects || []).map((s) => (
+                <MenuItem key={s._id} value={s._id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+          <TextField
+            label="Due date"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={form.dueDate}
+            onChange={set("dueDate")}
+          />
+          <TextField
+            label="Max marks"
+            type="number"
+            sx={{ width: 120 }}
+            value={form.maxMarks}
+            onChange={set("maxMarks")}
+          />
+        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={form.allowLate}
+              onChange={(e) =>
+                setForm({ ...form, allowLate: e.target.checked })
+              }
+            />
+          }
+          label={
+            <Typography sx={{ fontSize: "13px" }}>
+              Allow late submissions
+            </Typography>
+          }
+          sx={{ mb: 2 }}
+        />
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            onClick={() => handleSubmit("draft")}
+            disabled={isLoading || !form.title}
+          >
+            Save as draft
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => handleSubmit("published")}
+            disabled={
+              isLoading ||
+              !form.title ||
+              !form.classId ||
+              !form.subjectId ||
+              !form.dueDate
+            }
+          >
+            Publish
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }

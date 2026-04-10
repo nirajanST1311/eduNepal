@@ -1,6 +1,5 @@
 const Assignment = require("../models/Assignment");
 const Submission = require("../models/Submission");
-const User = require("../models/User");
 
 exports.getAll = async (req, res) => {
   const filter = {};

@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Divider,
-  Chip,
-} from "@mui/material";
+import { Box, Typography, TextField, Button, Divider } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -51,7 +42,9 @@ export default function GradeAssignment() {
         >
           Back
         </Button>
-        <Typography variant="body1" color="text.secondary">
+        <Typography
+          sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+        >
           No submissions yet.
         </Typography>
       </Box>
@@ -75,92 +68,129 @@ export default function GradeAssignment() {
           mb: 2,
         }}
       >
-        <Typography variant="h5">Grade submissions</Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
+          Grade submissions
+        </Typography>
+        <Typography
+          sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+        >
           {idx + 1} of {submissions.length}
         </Typography>
       </Box>
-      <Card>
-        <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <Typography variant="subtitle1" fontWeight={500}>
-              {current?.studentId?.name || "Student"}
-            </Typography>
-            {current?.isLate && (
-              <Chip label="Late" size="small" color="warning" />
-            )}
-            {current?.status === "graded" && (
-              <Chip label="Graded" size="small" color="success" />
-            )}
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Submitted{" "}
-            {current?.submittedAt
-              ? new Date(current.submittedAt).toLocaleDateString()
-              : "—"}
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          p: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+          <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
+            {current?.studentId?.name || "Student"}
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-          {current?.text && (
-            <Typography variant="body2" sx={{ mb: 2, whiteSpace: "pre-wrap" }}>
-              {current.text}
-            </Typography>
-          )}
-          {current?.fileUrl && (
-            <Button
-              variant="outlined"
-              size="small"
-              href={current.fileUrl}
-              target="_blank"
-              sx={{ mb: 2 }}
+          {current?.isLate && (
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                bgcolor: "var(--color-background-warning)",
+                color: "var(--color-text-warning)",
+                fontWeight: 500,
+                fontSize: "11px",
+              }}
             >
-              View attachment
-            </Button>
+              Late
+            </Box>
           )}
-          <Divider sx={{ mb: 2 }} />
-          <Box
-            sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}
+          {current?.status === "graded" && (
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                bgcolor: "var(--color-background-success)",
+                color: "var(--color-text-success)",
+                fontWeight: 500,
+                fontSize: "11px",
+              }}
+            >
+              Graded
+            </Box>
+          )}
+        </Box>
+        <Typography
+          sx={{ fontSize: "13px", color: "var(--color-text-secondary)", mb: 2 }}
+        >
+          Submitted{" "}
+          {current?.submittedAt
+            ? new Date(current.submittedAt).toLocaleDateString()
+            : "—"}
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        {current?.text && (
+          <Typography sx={{ fontSize: "13px", mb: 2, whiteSpace: "pre-wrap" }}>
+            {current.text}
+          </Typography>
+        )}
+        {current?.fileUrl && (
+          <Button
+            variant="outlined"
+            size="small"
+            href={current.fileUrl}
+            target="_blank"
+            sx={{ mb: 2 }}
           >
-            <TextField
-              label="Marks"
-              type="number"
-              size="small"
-              sx={{ width: 100 }}
-              value={marks}
-              onChange={(e) => setMarks(e.target.value)}
-            />
-            <TextField
-              label="Comment"
-              size="small"
-              fullWidth
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          </Box>
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-            <Button
-              startIcon={<NavigateBeforeIcon />}
-              disabled={idx === 0}
-              onClick={() => setIdx(idx - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleGrade}
-              disabled={isLoading || marks === ""}
-            >
-              Save & next
-            </Button>
-            <Button
-              endIcon={<NavigateNextIcon />}
-              disabled={idx === submissions.length - 1}
-              onClick={() => setIdx(idx + 1)}
-            >
-              Next
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+            View attachment
+          </Button>
+        )}
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
+          <TextField
+            label="Marks"
+            type="number"
+            size="small"
+            sx={{ width: 100 }}
+            value={marks}
+            onChange={(e) => setMarks(e.target.value)}
+          />
+          <TextField
+            label="Comment"
+            size="small"
+            fullWidth
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Button
+            startIcon={<NavigateBeforeIcon />}
+            disabled={idx === 0}
+            onClick={() => setIdx(idx - 1)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleGrade}
+            disabled={isLoading || marks === ""}
+          >
+            Save & next
+          </Button>
+          <Button
+            endIcon={<NavigateNextIcon />}
+            disabled={idx === submissions.length - 1}
+            onClick={() => setIdx(idx + 1)}
+          >
+            Next
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }

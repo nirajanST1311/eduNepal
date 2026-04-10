@@ -3,15 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Avatar,
   Grid,
   TextField,
   Button,
-  Chip,
   LinearProgress,
-  IconButton,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIosNew";
 import {
@@ -22,13 +18,13 @@ import StatCard from "@/components/common/StatCard";
 import dayjs from "dayjs";
 
 const avatarColors = [
-  "#2563eb",
-  "#059669",
+  "var(--color-text-info)",
+  "var(--color-text-success)",
   "#7c3aed",
   "#0891b2",
   "#be185d",
-  "#d97706",
-  "#dc2626",
+  "var(--color-text-warning)",
+  "var(--color-text-danger)",
 ];
 function getColor(name) {
   let h = 0;
@@ -87,14 +83,22 @@ export default function TeacherStudentDetail() {
       <Button
         startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
         onClick={() => navigate("/teacher/students")}
-        sx={{ mb: 2, color: "text.secondary", fontSize: "0.85rem" }}
+        sx={{ mb: 2, color: "var(--color-text-secondary)", fontSize: "13px" }}
       >
         Back to students
       </Button>
 
       {/* Student header */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          mb: 3,
+          p: 2,
+        }}
+      >
+        <Box
           sx={{
             display: "flex",
             alignItems: "flex-start",
@@ -107,7 +111,7 @@ export default function TeacherStudentDetail() {
               width: 56,
               height: 56,
               fontSize: 20,
-              fontWeight: 600,
+              fontWeight: 500,
               bgcolor: getColor(student.name),
             }}
           >
@@ -117,26 +121,36 @@ export default function TeacherStudentDetail() {
             <Box
               sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
             >
-              <Typography variant="h6">{student.name}</Typography>
+              <Typography sx={{ fontSize: "18px", fontWeight: 500 }}>
+                {student.name}
+              </Typography>
               {isLow && (
-                <Chip
-                  label="Needs attention"
-                  size="small"
+                <Box
+                  component="span"
                   sx={{
-                    bgcolor: "#fef3c7",
-                    color: "#92400e",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    bgcolor: "var(--color-background-warning)",
+                    color: "var(--color-text-warning)",
                     fontWeight: 500,
-                    fontSize: "0.65rem",
-                    height: 20,
+                    fontSize: "11px",
                   }}
-                />
+                >
+                  Needs attention
+                </Box>
               )}
             </Box>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+            >
               Roll No. {student.rollNumber || "—"} · Class {student.grade || ""}
               {student.section || ""} · {student.schoolName || ""}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+            >
               Enrolled:{" "}
               {student.enrolledAt
                 ? dayjs(student.enrolledAt).format("MMM YYYY")
@@ -151,8 +165,8 @@ export default function TeacherStudentDetail() {
               View all submissions
             </Button>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* Stat cards */}
       <Box
@@ -166,7 +180,7 @@ export default function TeacherStudentDetail() {
         <StatCard
           label="Attendance"
           value={attPct != null ? `${attPct}%` : "—"}
-          color={isLow ? "#dc2626" : undefined}
+          color={isLow ? "var(--color-text-danger)" : undefined}
         />
         <StatCard label="Assignments done" value={assignmentsDone} />
         <StatCard
@@ -182,352 +196,402 @@ export default function TeacherStudentDetail() {
       {/* Attendance calendar + Topic engagement */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Box
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-lg)",
+              height: "100%",
+              p: 2,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                mb: 1.5,
+              }}
+            >
+              <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                Attendance — {dayjs().format("MMMM")}
+              </Typography>
+              <Typography
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mb: 1.5,
+                  fontSize: "12px",
+                  color: isLow
+                    ? "var(--color-text-danger)"
+                    : "var(--color-text-success)",
+                  fontStyle: "italic",
                 }}
               >
-                <Typography variant="subtitle2" fontWeight={600}>
-                  Attendance — {dayjs().format("MMMM")}
-                </Typography>
+                {attPct != null ? `${attPct}% present` : ""}
+              </Typography>
+            </Box>
+            {/* Calendar header */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, 1fr)",
+                gap: 0.5,
+                mb: 0.5,
+              }}
+            >
+              {calDays.map((d, i) => (
                 <Typography
-                  variant="caption"
+                  key={i}
                   sx={{
-                    color: isLow ? "#dc2626" : "#16a34a",
-                    fontStyle: "italic",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "var(--color-text-secondary)",
+                    textAlign: "center",
                   }}
                 >
-                  {attPct != null ? `${attPct}% present` : ""}
+                  {d}
                 </Typography>
-              </Box>
-              {/* Calendar header */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  gap: 0.5,
-                  mb: 0.5,
-                }}
-              >
-                {calDays.map((d, i) => (
-                  <Typography
+              ))}
+            </Box>
+            {/* Calendar grid */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, 1fr)",
+                gap: 0.5,
+              }}
+            >
+              {monthData.map((d, i) => {
+                const bg =
+                  d === "P"
+                    ? "var(--color-background-success)"
+                    : d === "A"
+                      ? "var(--color-background-danger)"
+                      : d === "H"
+                        ? "var(--color-background-warning)"
+                        : "transparent";
+                const color =
+                  d === "P"
+                    ? "var(--color-text-success)"
+                    : d === "A"
+                      ? "var(--color-text-danger)"
+                      : d === "H"
+                        ? "var(--color-text-warning)"
+                        : "transparent";
+                return (
+                  <Box
                     key={i}
-                    variant="caption"
-                    align="center"
-                    fontWeight={500}
-                    color="text.secondary"
+                    sx={{
+                      width: "100%",
+                      aspectRatio: "1",
+                      borderRadius: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: bg,
+                      fontSize: "0.65rem",
+                      fontWeight: 500,
+                      color,
+                    }}
                   >
-                    {d}
-                  </Typography>
+                    {d || ""}
+                  </Box>
+                );
+              })}
+            </Box>
+            {monthData.length > 0 && (
+              <Box sx={{ display: "flex", gap: 2, mt: 1.5 }}>
+                {[
+                  ["Present", "var(--color-background-success)"],
+                  ["Absent", "var(--color-background-danger)"],
+                  ["Holiday", "var(--color-background-warning)"],
+                ].map(([l, c]) => (
+                  <Box
+                    key={l}
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                  >
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 0.5,
+                        bgcolor: c,
+                      }}
+                    />
+                    <Typography sx={{ fontSize: "11px" }}>{l}</Typography>
+                  </Box>
                 ))}
               </Box>
-              {/* Calendar grid */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  gap: 0.5,
-                }}
-              >
-                {monthData.map((d, i) => {
-                  const bg =
-                    d === "P"
-                      ? "#dcfce7"
-                      : d === "A"
-                        ? "#fecaca"
-                        : d === "H"
-                          ? "#fef3c7"
-                          : "transparent";
-                  const color =
-                    d === "P"
-                      ? "#16a34a"
-                      : d === "A"
-                        ? "#dc2626"
-                        : d === "H"
-                          ? "#d97706"
-                          : "transparent";
-                  return (
-                    <Box
-                      key={i}
-                      sx={{
-                        width: "100%",
-                        aspectRatio: "1",
-                        borderRadius: 0.5,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: bg,
-                        fontSize: "0.65rem",
-                        fontWeight: 600,
-                        color,
-                      }}
-                    >
-                      {d || ""}
-                    </Box>
-                  );
-                })}
-              </Box>
-              {monthData.length > 0 && (
-                <Box sx={{ display: "flex", gap: 2, mt: 1.5 }}>
-                  {[
-                    ["Present", "#dcfce7"],
-                    ["Absent", "#fecaca"],
-                    ["Holiday", "#fef3c7"],
-                  ].map(([l, c]) => (
-                    <Box
-                      key={l}
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                    >
-                      <Box
-                        sx={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 0.5,
-                          bgcolor: c,
-                        }}
-                      />
-                      <Typography variant="caption" fontSize="0.65rem">
-                        {l}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </Box>
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-                Topic engagement
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-lg)",
+              height: "100%",
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+              Topic engagement
+            </Typography>
+            {topicEngagement.length === 0 && (
+              <Typography
+                sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+              >
+                No topic data available
               </Typography>
-              {topicEngagement.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  No topic data available
-                </Typography>
-              )}
-              {topicEngagement.map((t, i) => (
-                <Box key={i} sx={{ mb: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 0.5,
-                    }}
-                  >
-                    <Typography variant="body2" fontSize="0.8rem">
-                      {t.name}
-                    </Typography>
-                    <Typography variant="caption" fontWeight={500}>
-                      {t.percent}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={t.percent}
-                    sx={{
-                      bgcolor: "rgba(0,0,0,0.06)",
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor:
-                          t.percent >= 60
-                            ? "#16a34a"
-                            : t.percent >= 30
-                              ? "#d97706"
-                              : "#dc2626",
-                      },
-                    }}
-                  />
+            )}
+            {topicEngagement.map((t, i) => (
+              <Box key={i} sx={{ mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 0.5,
+                  }}
+                >
+                  <Typography sx={{ fontSize: "13px" }}>{t.name}</Typography>
+                  <Typography sx={{ fontSize: "12px", fontWeight: 500 }}>
+                    {t.percent}%
+                  </Typography>
                 </Box>
-              ))}
-            </CardContent>
-          </Card>
+                <LinearProgress
+                  variant="determinate"
+                  value={t.percent}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    "& .MuiLinearProgress-bar": {
+                      bgcolor:
+                        t.percent >= 60
+                          ? "var(--color-text-success)"
+                          : t.percent >= 30
+                            ? "var(--color-text-warning)"
+                            : "var(--color-text-danger)",
+                    },
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
         </Grid>
       </Grid>
 
       {/* Assignments */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-            Assignments
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          mb: 3,
+          p: 2,
+        }}
+      >
+        <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+          Assignments
+        </Typography>
+        {assignments.length === 0 && (
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            No assignments yet
           </Typography>
-          {assignments.length === 0 && (
-            <Typography variant="body2" color="text.secondary">
-              No assignments yet
-            </Typography>
-          )}
-          {assignments.map((a, i) => {
-            const statusColor =
-              a.status === "graded"
-                ? "#16a34a"
-                : a.status === "late"
-                  ? "#dc2626"
-                  : a.status === "missing"
-                    ? "#dc2626"
-                    : "#64748b";
-            const statusLabel =
-              a.status === "graded"
-                ? "Graded"
-                : a.status === "late"
-                  ? "Late"
-                  : a.status === "missing"
-                    ? "Missing"
-                    : a.status || "";
-            return (
-              <Box
-                key={a._id || i}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  py: 1.2,
-                  borderBottom:
-                    i < assignments.length - 1
-                      ? "1px solid rgba(0,0,0,0.05)"
-                      : "none",
-                }}
-              >
-                <Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    {a.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {a.submittedAt
-                      ? `Submitted ${dayjs(a.submittedAt).format("MMM D")}`
-                      : a.dueDate
-                        ? `Due ${dayjs(a.dueDate).format("MMM D")}`
-                        : ""}
-                    {a.daysLate ? ` · ${a.daysLate} days late` : ""}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  {a.score != null && (
-                    <Typography variant="body2" fontWeight={600}>
-                      {a.score}/{a.total || 20}
-                    </Typography>
-                  )}
-                  {statusLabel && (
-                    <Typography
-                      variant="caption"
-                      fontWeight={500}
-                      sx={{ color: statusColor }}
-                    >
-                      {statusLabel}
-                    </Typography>
-                  )}
-                </Box>
+        )}
+        {assignments.map((a, i) => {
+          const statusColor =
+            a.status === "graded"
+              ? "var(--color-text-success)"
+              : a.status === "late"
+                ? "var(--color-text-danger)"
+                : a.status === "missing"
+                  ? "var(--color-text-danger)"
+                  : "var(--color-text-secondary)";
+          const statusLabel =
+            a.status === "graded"
+              ? "Graded"
+              : a.status === "late"
+                ? "Late"
+                : a.status === "missing"
+                  ? "Missing"
+                  : a.status || "";
+          return (
+            <Box
+              key={a._id || i}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                py: 1.2,
+                borderBottom:
+                  i < assignments.length - 1
+                    ? "0.5px solid var(--color-border-tertiary)"
+                    : "none",
+              }}
+            >
+              <Box>
+                <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                  {a.title}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  {a.submittedAt
+                    ? `Submitted ${dayjs(a.submittedAt).format("MMM D")}`
+                    : a.dueDate
+                      ? `Due ${dayjs(a.dueDate).format("MMM D")}`
+                      : ""}
+                  {a.daysLate ? ` · ${a.daysLate} days late` : ""}
+                </Typography>
               </Box>
-            );
-          })}
-        </CardContent>
-      </Card>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                {a.score != null && (
+                  <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                    {a.score}/{a.total || 20}
+                  </Typography>
+                )}
+                {statusLabel && (
+                  <Typography
+                    sx={{
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: statusColor,
+                    }}
+                  >
+                    {statusLabel}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
 
       {/* Recent activity + Teacher's note */}
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-                Recent activity
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-lg)",
+              height: "100%",
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+              Recent activity
+            </Typography>
+            {recentActivity.length === 0 && (
+              <Typography
+                sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+              >
+                No recent activity
               </Typography>
-              {recentActivity.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  No recent activity
-                </Typography>
-              )}
-              {recentActivity.map((a, i) => (
-                <Box key={i} sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
-                  <Box
+            )}
+            {recentActivity.map((a, i) => (
+              <Box key={i} sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    bgcolor: "var(--color-text-secondary)",
+                    mt: 0.7,
+                    flexShrink: 0,
+                  }}
+                />
+                <Box>
+                  <Typography sx={{ fontSize: "13px" }}>{a.label}</Typography>
+                  <Typography
                     sx={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      bgcolor: "#64748b",
-                      mt: 0.7,
-                      flexShrink: 0,
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
                     }}
-                  />
-                  <Box>
-                    <Typography variant="body2" fontSize="0.8rem">
-                      {a.label}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {a.date}
-                    </Typography>
-                  </Box>
+                  >
+                    {a.date}
+                  </Typography>
                 </Box>
-              ))}
-            </CardContent>
-          </Card>
+              </Box>
+            ))}
+          </Box>
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
-                Teacher's note
-              </Typography>
-              {notes.map((n) => (
-                <Box
-                  key={n._id}
+          <Box
+            sx={{
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-lg)",
+              height: "100%",
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+              Teacher's note
+            </Typography>
+            {notes.map((n) => (
+              <Box
+                key={n._id}
+                sx={{
+                  borderLeft: "3px solid var(--color-text-warning)",
+                  pl: 1.5,
+                  py: 0.5,
+                  mb: 1.5,
+                  bgcolor: "var(--color-background-warning)",
+                  borderRadius: "0 4px 4px 0",
+                }}
+              >
+                <Typography
                   sx={{
-                    borderLeft: "3px solid #d97706",
-                    pl: 1.5,
-                    py: 0.5,
-                    mb: 1.5,
-                    bgcolor: "#fffbeb",
-                    borderRadius: "0 4px 4px 0",
+                    fontStyle: "italic",
+                    fontSize: "13px",
+                    color: "var(--color-text-warning)",
                   }}
                 >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontStyle: "italic",
-                      fontSize: "0.8rem",
-                      color: "#78350f",
-                    }}
-                  >
-                    "{n.text}"
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Added {dayjs(n.createdAt).format("MMM D")}
-                  </Typography>
-                </Box>
-              ))}
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Add a note about this student..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                multiline
-                minRows={2}
-                sx={{ mt: 1, mb: 1 }}
-              />
-              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                <Button
-                  size="small"
-                  onClick={() => setNote("")}
-                  disabled={!note.trim()}
+                  "{n.text}"
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                  }}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleAddNote}
-                  disabled={noting || !note.trim()}
-                >
-                  Save note
-                </Button>
+                  Added {dayjs(n.createdAt).format("MMM D")}
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
+            ))}
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Add a note about this student..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              multiline
+              minRows={2}
+              sx={{ mt: 1, mb: 1 }}
+            />
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                onClick={() => setNote("")}
+                disabled={!note.trim()}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleAddNote}
+                disabled={noting || !note.trim()}
+              >
+                Save note
+              </Button>
+            </Box>
+          </Box>
         </Grid>
       </Grid>
     </Box>

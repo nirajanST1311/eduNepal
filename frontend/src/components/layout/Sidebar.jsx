@@ -7,7 +7,6 @@ import {
   ListItemText,
   Typography,
   Badge,
-  Chip,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -24,7 +23,7 @@ import HomeIcon from "@mui/icons-material/HomeOutlined";
 import SettingsIcon from "@mui/icons-material/SettingsOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
 
-const WIDTH = 220;
+const WIDTH = 180;
 
 const navByRole = {
   TEACHER: [
@@ -114,19 +113,19 @@ export default function Sidebar() {
         "& .MuiDrawer-paper": {
           width: WIDTH,
           boxSizing: "border-box",
-          borderRight: "1px solid rgba(0,0,0,0.08)",
-          bgcolor: "#ffffff",
-          px: 1.5,
-          pt: 2.5,
+          borderRight: "0.5px solid var(--color-border-tertiary)",
+          bgcolor: "var(--color-background-primary)",
+          px: 1,
+          pt: 2,
         },
       }}
     >
-      <Box sx={{ px: 1.5, mb: isSuperAdmin ? 3 : 4 }}>
+      <Box sx={{ px: 1.5, mb: isSuperAdmin ? 2.5 : 3 }}>
         <Typography
           sx={{
-            fontWeight: 700,
-            fontSize: "1.1rem",
-            color: "#1a5632",
+            fontWeight: 500,
+            fontSize: "13px",
+            color: "var(--color-text-primary)",
             letterSpacing: -0.3,
             lineHeight: 1.2,
           }}
@@ -136,33 +135,32 @@ export default function Sidebar() {
         {isSuperAdmin ? (
           <Box>
             <Typography
-              variant="caption"
               sx={{
-                color: "text.secondary",
-                fontSize: "0.68rem",
+                color: "var(--color-text-secondary)",
+                fontSize: "11px",
                 display: "block",
                 mb: 0.5,
               }}
             >
               {user?.municipalityName || "Lalitpur Metropolitan City"}
             </Typography>
-            <Chip
-              label="Super Admin"
-              size="small"
+            <Box
               sx={{
-                bgcolor: "#dcfce7",
-                color: "#166534",
-                fontWeight: 600,
-                fontSize: "0.6rem",
-                height: 20,
-                borderRadius: 1,
+                display: "inline-block",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                bgcolor: "var(--color-background-success)",
+                color: "var(--color-text-success)",
+                fontWeight: 500,
+                fontSize: "11px",
               }}
-            />
+            >
+              Super admin
+            </Box>
           </Box>
         ) : (
           <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", fontSize: "0.68rem" }}
+            sx={{ color: "var(--color-text-secondary)", fontSize: "11px" }}
           >
             {user?.role === "STUDENT"
               ? `${user?.name || ""} · Class ${user?.grade || ""}${user?.section || ""}`
@@ -183,20 +181,18 @@ export default function Sidebar() {
             return (
               <Typography
                 key={item.section}
-                variant="caption"
                 sx={{
                   display: "block",
                   px: 1.5,
                   pt: idx === 0 ? 0 : 2,
                   pb: 0.8,
-                  fontSize: "0.6rem",
-                  fontWeight: 600,
-                  letterSpacing: 1,
-                  color: "text.secondary",
-                  textTransform: "uppercase",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: 0.5,
+                  color: "var(--color-text-secondary)",
                 }}
               >
-                {item.section}
+                {item.section.charAt(0) + item.section.slice(1).toLowerCase()}
               </Typography>
             );
           }
@@ -206,25 +202,37 @@ export default function Sidebar() {
               key={item.path}
               onClick={() => navigate(item.path)}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: "var(--border-radius-md)",
                 mb: 0.3,
                 px: 1.5,
                 py: 0.8,
-                bgcolor: active ? "rgba(37,99,235,0.08)" : "transparent",
-                color: active ? "#2563eb" : "text.secondary",
+                bgcolor: active
+                  ? "var(--color-background-info)"
+                  : "transparent",
+                color: active
+                  ? "var(--color-text-info)"
+                  : "var(--color-text-secondary)",
                 "&:hover": {
-                  bgcolor: active ? "rgba(37,99,235,0.12)" : "rgba(0,0,0,0.03)",
+                  bgcolor: active
+                    ? "var(--color-background-info)"
+                    : "var(--color-background-secondary)",
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 28,
+                  color: "inherit",
+                  "& .MuiSvgIcon-root": { fontSize: 15, opacity: 0.75 },
+                }}
+              >
                 {item.icon}
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
                 primaryTypographyProps={{
-                  variant: "body2",
-                  fontWeight: active ? 600 : 400,
+                  fontSize: "13px",
+                  fontWeight: active ? 500 : 400,
                 }}
               />
               {item.badge && (
@@ -233,7 +241,7 @@ export default function Sidebar() {
                   color="error"
                   sx={{
                     "& .MuiBadge-badge": {
-                      fontSize: "0.6rem",
+                      fontSize: "11px",
                       minWidth: 16,
                       height: 16,
                     },

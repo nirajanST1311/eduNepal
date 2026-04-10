@@ -3,8 +3,6 @@ const Attendance = require("../models/Attendance");
 const Submission = require("../models/Submission");
 const Assignment = require("../models/Assignment");
 const StudentNote = require("../models/StudentNote");
-const Topic = require("../models/Topic");
-const Chapter = require("../models/Chapter");
 
 exports.getAll = async (req, res) => {
   const filter = { role: "STUDENT", active: true };

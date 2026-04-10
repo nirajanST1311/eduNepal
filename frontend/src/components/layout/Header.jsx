@@ -53,9 +53,8 @@ export default function Header() {
         justifyContent: "space-between",
         py: 1.5,
         mb: 1,
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        bgcolor: "#faf8f4",
+        borderBottom: "0.5px solid var(--color-border-tertiary)",
+        bgcolor: "var(--color-background-tertiary)",
       }}
     >
       {/* Left: Breadcrumb */}
@@ -67,7 +66,9 @@ export default function Header() {
       <Box
         sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
+        >
           {user?.name}
         </Typography>
         <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
@@ -75,10 +76,10 @@ export default function Header() {
             sx={{
               width: 32,
               height: 32,
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              bgcolor: "#2563eb",
-              color: "#fff",
+              fontSize: "11px",
+              fontWeight: 500,
+              bgcolor: "var(--color-background-info)",
+              color: "var(--color-text-info)",
             }}
           >
             {initials}
@@ -96,10 +97,9 @@ export default function Header() {
               sx: {
                 mt: 0.5,
                 minWidth: 160,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                borderRadius: "var(--border-radius-lg)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                boxShadow: "none",
               },
             },
           }}
@@ -122,11 +122,17 @@ export default function Header() {
           <Divider />
           <MenuItem onClick={handleLogout} sx={{ py: 1 }}>
             <ListItemIcon sx={{ minWidth: 32 }}>
-              <LogoutIcon fontSize="small" sx={{ color: "#dc2626" }} />
+              <LogoutIcon
+                fontSize="small"
+                sx={{ color: "var(--color-text-danger)" }}
+              />
             </ListItemIcon>
             <ListItemText
               primary="Logout"
-              primaryTypographyProps={{ variant: "body2", color: "#dc2626" }}
+              primaryTypographyProps={{
+                fontSize: "13px",
+                color: "var(--color-text-danger)",
+              }}
             />
           </MenuItem>
         </Menu>

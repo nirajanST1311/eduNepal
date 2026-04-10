@@ -1,9 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   FormControl,
   Select,
   MenuItem,
@@ -44,7 +42,7 @@ function AttendanceBadge({ status, onClick, editable }) {
           alignItems: "center",
           justifyContent: "center",
           fontSize: "0.75rem",
-          color: "#94a3b8",
+          color: "var(--color-text-secondary)",
           cursor: editable ? "pointer" : "default",
         }}
       >
@@ -63,10 +61,14 @@ function AttendanceBadge({ status, onClick, editable }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        bgcolor: isPresent ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)",
-        color: isPresent ? "#16a34a" : "#dc2626",
+        fontSize: "12px",
+        fontWeight: 500,
+        bgcolor: isPresent
+          ? "var(--color-background-success)"
+          : "var(--color-background-danger)",
+        color: isPresent
+          ? "var(--color-text-success)"
+          : "var(--color-text-danger)",
         cursor: editable ? "pointer" : "default",
         transition: "all 0.15s",
         "&:hover": editable ? { transform: "scale(1.1)" } : {},
@@ -80,9 +82,9 @@ function AttendanceBadge({ status, onClick, editable }) {
 export default function TeacherAttendance() {
   const { user } = useSelector((s) => s.auth);
   const [classId, setClassId] = useState("");
-  const today = dayjs();
+  const [today] = useState(() => dayjs());
   const todayStr = today.format("YYYY-MM-DD");
-  const weekDates = useMemo(() => getWeekDates(today), []);
+  const weekDates = getWeekDates(today);
   const todayIdx = weekDates.indexOf(todayStr);
 
   const { data: classes } = useGetClassesQuery({ schoolId: user?.schoolId });
@@ -114,34 +116,35 @@ export default function TeacherAttendance() {
 
   const weekAttendance = [att0, att1, att2, att3, att4];
 
-  const [todayRecords, setTodayRecords] = useState({});
-  const [initialized, setInitialized] = useState(false);
+  const [todayEdits, setTodayEdits] = useState(null);
   const [markAttendance, { isLoading: saving }] = useMarkAttendanceMutation();
 
-  useMemo(() => {
-    if (!classId) return;
+  // Derive todayRecords: user edits take priority, otherwise from fetched data
+  const derivedRecords = (() => {
+    if (!classId) return {};
     const todayAtt = todayIdx >= 0 ? weekAttendance[todayIdx] : null;
-    if (todayAtt?.records && !initialized) {
+    if (todayAtt?.records) {
       const map = {};
       todayAtt.records.forEach((r) => {
         map[r.studentId] = r.status;
       });
-      setTodayRecords(map);
-      setInitialized(true);
-    } else if (students.length && !initialized) {
+      return map;
+    }
+    if (students.length) {
       const map = {};
       students.forEach((s) => {
         map[s._id] = "P";
       });
-      setTodayRecords(map);
-      setInitialized(true);
+      return map;
     }
-  }, [weekAttendance, students, classId, initialized, todayIdx]);
+    return {};
+  })();
+  const todayRecords = todayEdits ?? derivedRecords;
 
   const toggleToday = (id) => {
-    setTodayRecords((prev) => ({
-      ...prev,
-      [id]: prev[id] === "P" ? "A" : "P",
+    setTodayEdits((prev) => ({
+      ...(prev ?? derivedRecords),
+      [id]: (prev ?? derivedRecords)[id] === "P" ? "A" : "P",
     }));
   };
 
@@ -150,7 +153,7 @@ export default function TeacherAttendance() {
     students.forEach((s) => {
       map[s._id] = "P";
     });
-    setTodayRecords(map);
+    setTodayEdits(map);
   };
 
   const handleSave = async () => {
@@ -172,7 +175,6 @@ export default function TeacherAttendance() {
   const presentCount = Object.values(todayRecords).filter(
     (v) => v === "P",
   ).length;
-  const selectedClass = (classes || []).find((c) => c._id === classId);
 
   return (
     <Box>
@@ -185,10 +187,12 @@ export default function TeacherAttendance() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
             Attendance
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
             Today · {today.format("dddd, MMM D")}
           </Typography>
         </Box>
@@ -204,10 +208,9 @@ export default function TeacherAttendance() {
             displayEmpty
             onChange={(e) => {
               setClassId(e.target.value);
-              setInitialized(false);
-              setTodayRecords({});
+              setTodayEdits(null);
             }}
-            sx={{ bgcolor: "#fff" }}
+            sx={{ bgcolor: "var(--color-background-primary)" }}
           >
             <MenuItem value="" disabled>
               Select class
@@ -230,9 +233,11 @@ export default function TeacherAttendance() {
               Mark all present
             </Button>
             <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ ml: "auto" }}
+              sx={{
+                fontSize: "13px",
+                color: "var(--color-text-secondary)",
+                ml: "auto",
+              }}
             >
               {presentCount} / {students.length} present
             </Typography>
@@ -241,8 +246,14 @@ export default function TeacherAttendance() {
       </Box>
 
       {classId && students.length > 0 && (
-        <Card>
-          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+        <Box
+          sx={{
+            bgcolor: "var(--color-background-primary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: "var(--border-radius-lg)",
+          }}
+        >
+          <Box sx={{ p: 0 }}>
             <Box sx={{ overflowX: "auto" }}>
               <Box sx={{ minWidth: 500 }}>
                 {/* Header */}
@@ -253,23 +264,27 @@ export default function TeacherAttendance() {
                     alignItems: "center",
                     px: 2.5,
                     py: 1.5,
-                    borderBottom: "1px solid rgba(0,0,0,0.06)",
+                    borderBottom: "0.5px solid var(--color-border-tertiary)",
                   }}
                 >
                   <Typography
-                    variant="caption"
-                    fontWeight={500}
-                    color="text.secondary"
+                    sx={{
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "var(--color-text-secondary)",
+                    }}
                   >
                     Student
                   </Typography>
                   {dayLabels.map((d) => (
                     <Typography
                       key={d}
-                      variant="caption"
-                      fontWeight={500}
-                      color="text.secondary"
-                      align="center"
+                      sx={{
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "var(--color-text-secondary)",
+                        textAlign: "center",
+                      }}
                     >
                       {d}
                     </Typography>
@@ -286,11 +301,13 @@ export default function TeacherAttendance() {
                       alignItems: "center",
                       px: 2.5,
                       py: 1,
-                      borderBottom: "1px solid rgba(0,0,0,0.04)",
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.01)" },
+                      borderBottom: "0.5px solid var(--color-border-tertiary)",
+                      "&:hover": {
+                        bgcolor: "var(--color-background-secondary)",
+                      },
                     }}
                   >
-                    <Typography variant="body2" fontWeight={500}>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                       {s.name}
                     </Typography>
                     {weekDates.map((_, dayIdx) => {
@@ -310,7 +327,7 @@ export default function TeacherAttendance() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#cbd5e1",
+                                color: "var(--color-text-secondary)",
                               }}
                             >
                               ·
@@ -337,7 +354,7 @@ export default function TeacherAttendance() {
                 py: 1.5,
                 display: "flex",
                 justifyContent: "flex-end",
-                borderTop: "1px solid rgba(0,0,0,0.06)",
+                borderTop: "0.5px solid var(--color-border-tertiary)",
               }}
             >
               <Button
@@ -349,15 +366,18 @@ export default function TeacherAttendance() {
                 Save attendance
               </Button>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       )}
 
       {classId && students.length === 0 && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 6 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 6,
+          }}
         >
           No students in this class
         </Typography>
@@ -365,9 +385,12 @@ export default function TeacherAttendance() {
 
       {!classId && (
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: "center", py: 6 }}
+          sx={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            textAlign: "center",
+            py: 6,
+          }}
         >
           Select a class to mark attendance
         </Typography>

@@ -54,7 +54,11 @@ function App() {
       <Route
         path="/login"
         element={
-          user ? <Navigate to={roleHome[user.role] || "/"} /> : <LoginPage />
+          user && roleHome[user.role] ? (
+            <Navigate to={roleHome[user.role]} replace />
+          ) : (
+            <LoginPage />
+          )
         }
       />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -140,12 +144,7 @@ function App() {
       </Route>
 
       {/* Default redirect */}
-      <Route
-        path="*"
-        element={
-          <Navigate to={user ? roleHome[user.role] || "/login" : "/login"} />
-        }
-      />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
