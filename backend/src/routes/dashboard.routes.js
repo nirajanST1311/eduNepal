@@ -9,5 +9,11 @@ router.get(
   authorize("SUPER_ADMIN"),
   dashboard.getSuperadminStats,
 );
+router.get(
+  "/superadmin/analytics",
+  protect,
+  authorize("SUPER_ADMIN"),
+  dashboard.getSuperadminAnalytics,
+);
 
 module.exports = router;

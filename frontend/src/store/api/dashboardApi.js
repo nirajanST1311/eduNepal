@@ -10,8 +10,24 @@ export const dashboardApi = apiSlice.injectEndpoints({
       query: () => "/dashboard/superadmin",
       providesTags: ["Dashboard"],
     }),
+    getSuperadminAnalytics: build.query({
+      query: ({
+        page = 1,
+        limit = 20,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = {}) => ({
+        url: "/dashboard/superadmin/analytics",
+        params: { page, limit, search, sortBy, sortOrder },
+      }),
+      providesTags: ["Dashboard"],
+    }),
   }),
 });
 
-export const { useGetDashboardStatsQuery, useGetSuperadminStatsQuery } =
-  dashboardApi;
+export const {
+  useGetDashboardStatsQuery,
+  useGetSuperadminStatsQuery,
+  useGetSuperadminAnalyticsQuery,
+} = dashboardApi;

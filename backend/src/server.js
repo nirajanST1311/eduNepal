@@ -22,6 +22,7 @@ const studentRoutes = require("./routes/student.routes");
 const uploadRoutes = require("./routes/upload.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const userRoutes = require("./routes/user.routes");
+const bulkUploadRoutes = require("./routes/bulkUpload.routes");
 
 const errorHandler = require("./middleware/errorHandler");
 
@@ -55,6 +56,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/bulk-upload", bulkUploadRoutes);
 
 app.use(errorHandler);
 

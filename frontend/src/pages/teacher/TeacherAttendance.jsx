@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -7,8 +7,14 @@ import {
   MenuItem,
   Button,
   IconButton,
+  Snackbar,
+  Alert,
+  Skeleton,
 } from "@mui/material";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import ChevronLeftOutlinedIcon from "@mui/icons-material/ChevronLeftOutlined";
+import ChevronRightOutlinedIcon from "@mui/icons-material/ChevronRightOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { useGetClassesQuery } from "@/store/api/classApi";
@@ -41,7 +47,7 @@ function AttendanceBadge({ status, onClick, editable }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "0.75rem",
+          fontSize: "12px",
           color: "var(--color-text-secondary)",
           cursor: editable ? "pointer" : "default",
         }}
@@ -82,16 +88,22 @@ function AttendanceBadge({ status, onClick, editable }) {
 export default function TeacherAttendance() {
   const { user } = useSelector((s) => s.auth);
   const [classId, setClassId] = useState("");
-  const [today] = useState(() => dayjs());
-  const todayStr = today.format("YYYY-MM-DD");
-  const weekDates = getWeekDates(today);
+  const realToday = dayjs();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const referenceDate = realToday.add(weekOffset * 7, "day");
+  const weekDates = getWeekDates(referenceDate);
+  const todayStr = realToday.format("YYYY-MM-DD");
   const todayIdx = weekDates.indexOf(todayStr);
+  const isCurrentWeek = weekOffset === 0;
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const { data: classes } = useGetClassesQuery({ schoolId: user?.schoolId });
-  const { data: students = [] } = useGetStudentsQuery(
-    classId ? { classId } : undefined,
-    { skip: !classId },
-  );
+  const { data: students = [], isLoading: loadingStudents } =
+    useGetStudentsQuery(classId ? { classId } : undefined, { skip: !classId });
 
   const { data: att0 } = useGetAttendanceQuery(
     { classId, date: weekDates[0] },
@@ -113,13 +125,11 @@ export default function TeacherAttendance() {
     { classId, date: weekDates[4] },
     { skip: !classId },
   );
-
   const weekAttendance = [att0, att1, att2, att3, att4];
 
   const [todayEdits, setTodayEdits] = useState(null);
   const [markAttendance, { isLoading: saving }] = useMarkAttendanceMutation();
 
-  // Derive todayRecords: user edits take priority, otherwise from fetched data
   const derivedRecords = (() => {
     if (!classId) return {};
     const todayAtt = todayIdx >= 0 ? weekAttendance[todayIdx] : null;
@@ -141,12 +151,15 @@ export default function TeacherAttendance() {
   })();
   const todayRecords = todayEdits ?? derivedRecords;
 
-  const toggleToday = (id) => {
-    setTodayEdits((prev) => ({
-      ...(prev ?? derivedRecords),
-      [id]: (prev ?? derivedRecords)[id] === "P" ? "A" : "P",
-    }));
-  };
+  const toggleToday = useCallback(
+    (id) => {
+      setTodayEdits((prev) => ({
+        ...(prev ?? derivedRecords),
+        [id]: (prev ?? derivedRecords)[id] === "P" ? "A" : "P",
+      }));
+    },
+    [derivedRecords],
+  );
 
   const markAllPresent = () => {
     const map = {};
@@ -156,12 +169,33 @@ export default function TeacherAttendance() {
     setTodayEdits(map);
   };
 
+  const markAllAbsent = () => {
+    const map = {};
+    students.forEach((s) => {
+      map[s._id] = "A";
+    });
+    setTodayEdits(map);
+  };
+
   const handleSave = async () => {
-    const recs = Object.entries(todayRecords).map(([studentId, status]) => ({
-      studentId,
-      status,
-    }));
-    await markAttendance({ classId, date: todayStr, records: recs }).unwrap();
+    try {
+      const recs = Object.entries(todayRecords).map(([studentId, status]) => ({
+        studentId,
+        status,
+      }));
+      await markAttendance({ classId, date: todayStr, records: recs }).unwrap();
+      setSnackbar({
+        open: true,
+        message: "Attendance saved successfully",
+        severity: "success",
+      });
+    } catch {
+      setSnackbar({
+        open: true,
+        message: "Failed to save attendance",
+        severity: "error",
+      });
+    }
   };
 
   const getStatusForDay = (studentId, dayIdx) => {
@@ -175,9 +209,21 @@ export default function TeacherAttendance() {
   const presentCount = Object.values(todayRecords).filter(
     (v) => v === "P",
   ).length;
+  const absentCount = Object.values(todayRecords).filter(
+    (v) => v === "A",
+  ).length;
+
+  // Week label
+  const weekStart = dayjs(weekDates[0]);
+  const weekEnd = dayjs(weekDates[4]);
+  const weekLabel =
+    weekStart.month() === weekEnd.month()
+      ? `${weekStart.format("MMM D")} – ${weekEnd.format("D, YYYY")}`
+      : `${weekStart.format("MMM D")} – ${weekEnd.format("MMM D, YYYY")}`;
 
   return (
     <Box>
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -193,19 +239,27 @@ export default function TeacherAttendance() {
           <Typography
             sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
           >
-            Today · {today.format("dddd, MMM D")}
+            {isCurrentWeek ? "This week" : weekLabel} ·{" "}
+            {realToday.format("dddd, MMM D")}
           </Typography>
         </Box>
-        <IconButton size="small">
-          <MoreHorizIcon />
-        </IconButton>
       </Box>
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center" }}>
-        <FormControl sx={{ minWidth: 200 }}>
+      {/* Controls */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mb: 3,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <FormControl sx={{ minWidth: 180 }}>
           <Select
             value={classId}
             displayEmpty
+            size="small"
             onChange={(e) => {
               setClassId(e.target.value);
               setTodayEdits(null);
@@ -222,30 +276,103 @@ export default function TeacherAttendance() {
             ))}
           </Select>
         </FormControl>
-        {classId && students.length > 0 && (
-          <>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={markAllPresent}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              Mark all present
-            </Button>
+
+        {/* Week navigation */}
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: "auto" }}
+        >
+          <IconButton size="small" onClick={() => setWeekOffset((w) => w - 1)}>
+            <ChevronLeftOutlinedIcon fontSize="small" />
+          </IconButton>
+          <Button
+            size="small"
+            variant={isCurrentWeek ? "contained" : "outlined"}
+            onClick={() => setWeekOffset(0)}
+            sx={{ textTransform: "none", fontSize: "12px", minWidth: 80 }}
+          >
+            {isCurrentWeek ? "This week" : weekLabel}
+          </Button>
+          <IconButton
+            size="small"
+            onClick={() => setWeekOffset((w) => w + 1)}
+            disabled={weekOffset >= 0}
+          >
+            <ChevronRightOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+
+      {/* Quick actions + stats */}
+      {classId && students.length > 0 && isCurrentWeek && (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            mb: 3,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={markAllPresent}
+            sx={{ textTransform: "none", fontSize: "12px" }}
+          >
+            Mark all present
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={markAllAbsent}
+            sx={{ textTransform: "none", fontSize: "12px" }}
+          >
+            Mark all absent
+          </Button>
+          <Box sx={{ ml: "auto", display: "flex", gap: 2 }}>
             <Typography
               sx={{
                 fontSize: "13px",
-                color: "var(--color-text-secondary)",
-                ml: "auto",
+                color: "var(--color-text-success)",
+                fontWeight: 500,
               }}
             >
-              {presentCount} / {students.length} present
+              {presentCount} present
             </Typography>
-          </>
-        )}
-      </Box>
+            <Typography
+              sx={{
+                fontSize: "13px",
+                color: "var(--color-text-danger)",
+                fontWeight: 500,
+              }}
+            >
+              {absentCount} absent
+            </Typography>
+            <Typography
+              sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+            >
+              of {students.length}
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
-      {classId && students.length > 0 && (
+      {/* Loading */}
+      {classId && loadingStudents && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton
+              key={i}
+              variant="rounded"
+              height={48}
+              sx={{ borderRadius: "var(--border-radius-md)" }}
+            />
+          ))}
+        </Box>
+      )}
+
+      {/* Attendance grid */}
+      {classId && !loadingStudents && students.length > 0 && (
         <Box
           sx={{
             bgcolor: "var(--color-background-primary)",
@@ -253,148 +380,205 @@ export default function TeacherAttendance() {
             borderRadius: "var(--border-radius-lg)",
           }}
         >
-          <Box sx={{ p: 0 }}>
-            <Box sx={{ overflowX: "auto" }}>
-              <Box sx={{ minWidth: 500 }}>
-                {/* Header */}
+          <Box sx={{ overflowX: "auto" }}>
+            <Box sx={{ minWidth: 500 }}>
+              {/* Header */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr repeat(5, 56px)",
+                  alignItems: "center",
+                  px: 2.5,
+                  py: 1.5,
+                  borderBottom: "0.5px solid var(--color-border-tertiary)",
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Student
+                </Typography>
+                {dayLabels.map((d, idx) => (
+                  <Box key={d} sx={{ textAlign: "center" }}>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        fontWeight: idx === todayIdx ? 600 : 500,
+                        color:
+                          idx === todayIdx
+                            ? "var(--color-text-primary)"
+                            : "var(--color-text-secondary)",
+                      }}
+                    >
+                      {d}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "10px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      {dayjs(weekDates[idx]).format("D")}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Rows */}
+              {students.map((s) => (
                 <Box
+                  key={s._id}
                   sx={{
                     display: "grid",
                     gridTemplateColumns: "1fr repeat(5, 56px)",
                     alignItems: "center",
                     px: 2.5,
-                    py: 1.5,
+                    py: 1,
                     borderBottom: "0.5px solid var(--color-border-tertiary)",
+                    "&:last-child": { borderBottom: "none" },
+                    "&:hover": { bgcolor: "var(--color-background-secondary)" },
                   }}
                 >
-                  <Typography
-                    sx={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "var(--color-text-secondary)",
-                    }}
-                  >
-                    Student
-                  </Typography>
-                  {dayLabels.map((d) => (
-                    <Typography
-                      key={d}
-                      sx={{
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        color: "var(--color-text-secondary)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {d}
-                    </Typography>
-                  ))}
-                </Box>
-
-                {/* Rows */}
-                {students.map((s) => (
-                  <Box
-                    key={s._id}
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr repeat(5, 56px)",
-                      alignItems: "center",
-                      px: 2.5,
-                      py: 1,
-                      borderBottom: "0.5px solid var(--color-border-tertiary)",
-                      "&:hover": {
-                        bgcolor: "var(--color-background-secondary)",
-                      },
-                    }}
-                  >
+                  <Box>
                     <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                       {s.name}
                     </Typography>
-                    {weekDates.map((_, dayIdx) => {
-                      const status = getStatusForDay(s._id, dayIdx);
-                      const isFuture = dayIdx > todayIdx && todayIdx >= 0;
-                      const editable = dayIdx === todayIdx;
-                      return (
-                        <Box
-                          key={dayIdx}
-                          sx={{ display: "flex", justifyContent: "center" }}
-                        >
-                          {isFuture ? (
-                            <Box
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "var(--color-text-secondary)",
-                              }}
-                            >
-                              ·
-                            </Box>
-                          ) : (
-                            <AttendanceBadge
-                              status={status}
-                              editable={editable}
-                              onClick={
-                                editable ? () => toggleToday(s._id) : undefined
-                              }
-                            />
-                          )}
-                        </Box>
-                      );
-                    })}
+                    {s.rollNumber && (
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        Roll {s.rollNumber}
+                      </Typography>
+                    )}
                   </Box>
-                ))}
-              </Box>
+                  {weekDates.map((_, dayIdx) => {
+                    const status = getStatusForDay(s._id, dayIdx);
+                    const isFuture = todayIdx >= 0 ? dayIdx > todayIdx : false;
+                    const editable = dayIdx === todayIdx && isCurrentWeek;
+                    return (
+                      <Box
+                        key={dayIdx}
+                        sx={{ display: "flex", justifyContent: "center" }}
+                      >
+                        {isFuture ? (
+                          <Box
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "var(--color-text-secondary)",
+                            }}
+                          >
+                            ·
+                          </Box>
+                        ) : (
+                          <AttendanceBadge
+                            status={status}
+                            editable={editable}
+                            onClick={
+                              editable ? () => toggleToday(s._id) : undefined
+                            }
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              ))}
             </Box>
+          </Box>
+
+          {/* Save bar */}
+          {isCurrentWeek && (
             <Box
               sx={{
                 px: 2.5,
                 py: 1.5,
                 display: "flex",
                 justifyContent: "flex-end",
+                alignItems: "center",
+                gap: 2,
                 borderTop: "0.5px solid var(--color-border-tertiary)",
               }}
             >
+              {todayEdits && (
+                <Typography
+                  sx={{ fontSize: "12px", color: "var(--color-text-warning)" }}
+                >
+                  Unsaved changes
+                </Typography>
+              )}
               <Button
                 variant="contained"
                 size="small"
                 onClick={handleSave}
                 disabled={saving}
+                startIcon={<CheckCircleOutlinedIcon />}
+                sx={{ textTransform: "none" }}
               >
-                Save attendance
+                {saving ? "Saving…" : "Save attendance"}
               </Button>
             </Box>
-          </Box>
+          )}
         </Box>
       )}
 
-      {classId && students.length === 0 && (
-        <Typography
-          sx={{
-            fontSize: "13px",
-            color: "var(--color-text-secondary)",
-            textAlign: "center",
-            py: 6,
-          }}
-        >
-          No students in this class
-        </Typography>
+      {/* Empty states */}
+      {classId && !loadingStudents && students.length === 0 && (
+        <Box sx={{ textAlign: "center", py: 6 }}>
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            No students in this class
+          </Typography>
+        </Box>
       )}
 
       {!classId && (
-        <Typography
-          sx={{
-            fontSize: "13px",
-            color: "var(--color-text-secondary)",
-            textAlign: "center",
-            py: 6,
-          }}
-        >
-          Select a class to mark attendance
-        </Typography>
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <EventAvailableOutlinedIcon
+            sx={{
+              fontSize: 48,
+              color: "var(--color-text-secondary)",
+              mb: 1.5,
+              opacity: 0.4,
+            }}
+          />
+          <Typography sx={{ fontSize: "14px", fontWeight: 500, mb: 0.5 }}>
+            Select a class
+          </Typography>
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            Choose a class from above to mark or view attendance
+          </Typography>
+        </Box>
       )}
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

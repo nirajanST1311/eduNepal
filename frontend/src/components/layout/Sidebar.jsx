@@ -40,6 +40,7 @@ const navByRole = {
       path: "/teacher/attendance",
     },
     { label: "Students", icon: <PeopleIcon />, path: "/teacher/students" },
+    { label: "Notices", icon: <CampaignIcon />, path: "/teacher/notices" },
   ],
   STUDENT: [
     { label: "Home", icon: <HomeIcon />, path: "/student" },
@@ -64,8 +65,9 @@ const navByRole = {
   SCHOOL_ADMIN: [
     { label: "Dashboard", icon: <DashboardIcon />, path: "/admin" },
     { label: "Teachers", icon: <PeopleIcon />, path: "/admin/teachers" },
-    { label: "Students", icon: <PeopleIcon />, path: "/admin/students" },
+    { label: "Students", icon: <PersonIcon />, path: "/admin/students" },
     { label: "Classes", icon: <SchoolIcon />, path: "/admin/classes" },
+    { label: "Subjects", icon: <SubjectIcon />, path: "/admin/subjects" },
     { label: "Notices", icon: <CampaignIcon />, path: "/admin/notices" },
   ],
   SUPER_ADMIN: [

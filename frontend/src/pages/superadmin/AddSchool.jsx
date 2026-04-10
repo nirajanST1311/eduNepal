@@ -9,13 +9,10 @@ import {
   TextField,
   MenuItem,
   Grid,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
   FormLabel,
   Checkbox,
   FormGroup,
+  FormControlLabel,
   Table,
   TableBody,
   TableRow,
@@ -46,57 +43,13 @@ const STEPS = [
   "Review",
 ];
 
-const PROVINCES = [
-  "Koshi Province",
-  "Madhesh Province",
-  "Bagmati Province",
-  "Gandaki Province",
-  "Lumbini Province",
-  "Karnali Province",
-  "Sudurpashchim Province",
-];
-
-const DISTRICTS_BY_PROVINCE = {
-  "Bagmati Province": [
-    "Kathmandu",
-    "Lalitpur",
-    "Bhaktapur",
-    "Kavrepalanchok",
-    "Nuwakot",
-    "Rasuwa",
-    "Dhading",
-    "Makwanpur",
-    "Sindhuli",
-    "Ramechhap",
-    "Dolakha",
-    "Sindhupalchok",
-    "Chitwan",
-  ],
-  "Koshi Province": ["Morang", "Sunsari", "Jhapa", "Ilam", "Panchthar"],
-  "Madhesh Province": ["Dhanusha", "Mahottari", "Sarlahi", "Siraha", "Saptari"],
-  "Gandaki Province": ["Kaski", "Tanahun", "Lamjung", "Gorkha", "Syangja"],
-  "Lumbini Province": ["Rupandehi", "Kapilvastu", "Palpa", "Gulmi", "Dang"],
-  "Karnali Province": [
-    "Surkhet",
-    "Dailekh",
-    "Jajarkot",
-    "Salyan",
-    "Rukum West",
-  ],
-  "Sudurpashchim Province": [
-    "Kailali",
-    "Kanchanpur",
-    "Dadeldhura",
-    "Baitadi",
-    "Darchula",
-  ],
-};
-
 const ACADEMIC_YEARS = ["2081-82 BS", "2082-83 BS", "2083-84 BS"];
 
 const WARDS = Array.from({ length: 35 }, (_, i) => "Ward " + (i + 1));
 
 const ALL_GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+
+const BS_YEARS = Array.from({ length: 84 }, (_, i) => String(2083 - i));
 
 const AFFILIATION_BOARDS = [
   "NEB \u2014 National Examinations Board",
@@ -114,8 +67,6 @@ const DEFAULT_SUBJECTS = [
   "Computer Science",
   "Moral Education",
 ];
-
-const SECTION_OPTIONS = ["1 section", "2 sections", "3 sections", "4 sections"];
 
 function SectionHeader({ icon, title }) {
   return (
@@ -183,32 +134,21 @@ export default function AddSchool() {
   const [createSchool, { isLoading }] = useCreateSchoolMutation();
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [form, setForm] = useState({
     nameEn: "",
-    nameNp: "",
     regNo: "",
-    emis: "",
     established: "",
     phone: "",
     email: "",
     schoolLevel: "Secondary (1-12)",
-    managementType: "Community",
     affiliationBoard: "NEB \u2014 National Examinations Board",
-    sanctionedPositions: "",
-    province: "Bagmati Province",
-    district: "Lalitpur",
     municipality: "Lalitpur Metropolitan City",
     ward: "",
     tole: "",
     addressNp: "",
-    gpsLat: "",
-    gpsLng: "",
     academicYear: "2081-82 BS",
-    totalStudents: "",
     grades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    sectionsPrimary: "1 section",
-    sectionsMiddle: "1 section",
-    sectionsSecondary: "1 section",
     subjects: [
       "Nepali",
       "English",
@@ -222,12 +162,17 @@ export default function AddSchool() {
     principalPhone: "",
     principalEmail: "",
     principalCitizenship: "",
-    principalAppoint: "",
     password: "",
   });
 
-  const set = (field) => (e) =>
+  const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const toggleGrade = (g) =>
     setForm((f) => ({
@@ -245,37 +190,61 @@ export default function AddSchool() {
         : [...f.subjects, s],
     }));
 
+  const stepRequiredFields = [
+    [
+      { key: "nameEn", label: "School name" },
+      { key: "regNo", label: "Registration number" },
+      { key: "established", label: "Established year" },
+    ],
+    [
+      { key: "municipality", label: "Municipality" },
+      { key: "ward", label: "Ward" },
+      { key: "tole", label: "Tole" },
+      { key: "addressNp", label: "Full address" },
+    ],
+    [{ key: "academicYear", label: "Academic year" }],
+    [
+      { key: "principalName", label: "Principal name" },
+      { key: "principalPhone", label: "Phone number" },
+      { key: "password", label: "Password" },
+    ],
+  ];
+
+  const validateStep = (stepIndex) => {
+    const required = stepRequiredFields[stepIndex] || [];
+    const errors = {};
+    for (const { key, label } of required) {
+      if (!form[key] || !String(form[key]).trim()) {
+        errors[key] = `${label} is required`;
+      }
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep((s) => s + 1);
+    }
+  };
+
   const handleSubmit = async () => {
     setError("");
     try {
       await createSchool({
         name: form.nameEn,
-        nameNp: form.nameNp,
         regNo: form.regNo,
-        emis: form.emis,
         established: form.established,
         phone: form.phone,
         email: form.email,
         schoolLevel: form.schoolLevel,
-        managementType: form.managementType,
         affiliationBoard: form.affiliationBoard,
-        sanctionedPositions: form.sanctionedPositions,
-        province: form.province,
-        district: form.district,
         municipality: form.municipality,
         ward: form.ward,
         tole: form.tole,
         addressNp: form.addressNp,
-        gpsLat: form.gpsLat,
-        gpsLng: form.gpsLng,
         academicYear: form.academicYear,
-        totalStudents: form.totalStudents,
         grades: form.grades,
-        sections: {
-          primary: form.sectionsPrimary,
-          middle: form.sectionsMiddle,
-          secondary: form.sectionsSecondary,
-        },
         subjects: form.subjects,
         principal: {
           name: form.principalName,
@@ -292,8 +261,6 @@ export default function AddSchool() {
     }
   };
 
-  const districts = DISTRICTS_BY_PROVINCE[form.province] || [];
-
   const renderIdentity = () => (
     <>
       <Card variant="outlined" sx={{ mb: 3 }}>
@@ -305,22 +272,14 @@ export default function AddSchool() {
           <Grid container spacing={2}>
             <Grid size={{ xs: 12 }}>
               <TextField
-                label="School name (English)"
+                label="School name"
                 required
                 fullWidth
                 placeholder="e.g. Shree Janata Secondary School"
                 value={form.nameEn}
                 onChange={set("nameEn")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="School name (Nepali)"
-                required
-                fullWidth
-                placeholder="e.g. \u0936\u094d\u0930\u0940 \u091c\u0928\u0924\u093e \u092e\u093e\u0927\u094d\u092f\u092e\u093f\u0915 \u0935\u093f\u0926\u094d\u092f\u093e\u0932\u092f"
-                value={form.nameNp}
-                onChange={set("nameNp")}
+                error={Boolean(fieldErrors.nameEn)}
+                helperText={fieldErrors.nameEn || ""}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -331,18 +290,10 @@ export default function AddSchool() {
                 placeholder="\u0935\u093f\u0926\u094d\u092f\u093e\u0932\u092f \u0926\u0930\u094d\u0924\u093e \u0928\u092e\u094d\u092c\u0930"
                 value={form.regNo}
                 onChange={set("regNo")}
-                helperText="Issued by Ministry of Education"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="EMIS code"
-                required
-                fullWidth
-                placeholder="e.g. 27021234"
-                value={form.emis}
-                onChange={set("emis")}
-                helperText="Dept. of Education unique code"
+                error={Boolean(fieldErrors.regNo)}
+                helperText={
+                  fieldErrors.regNo || "Issued by Ministry of Education"
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -350,10 +301,18 @@ export default function AddSchool() {
                 label="Established year (BS)"
                 required
                 fullWidth
-                placeholder="e.g. 2035"
+                select
                 value={form.established}
                 onChange={set("established")}
-              />
+                error={Boolean(fieldErrors.established)}
+                helperText={fieldErrors.established || ""}
+              >
+                {BS_YEARS.map((y) => (
+                  <MenuItem key={y} value={y}>
+                    {y}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -364,7 +323,7 @@ export default function AddSchool() {
                 onChange={set("phone")}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Official email"
                 fullWidth
@@ -385,100 +344,47 @@ export default function AddSchool() {
           />
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl>
-                <FormLabel
-                  sx={{ fontWeight: 500, fontSize: "0.85rem", mb: 0.5 }}
-                >
-                  School level *
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={form.schoolLevel}
-                  onChange={set("schoolLevel")}
-                >
-                  <FormControlLabel
-                    value="Secondary (1-12)"
-                    control={<Radio size="small" />}
-                    label="Secondary (1-12)"
-                    sx={{
-                      border: "1.5px solid",
-                      borderColor:
-                        form.schoolLevel === "Secondary (1-12)"
+              <Typography
+                variant="caption"
+                fontWeight={500}
+                sx={{ mb: 1, display: "block", color: "text.secondary" }}
+              >
+                School level *
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                {["Secondary (1-12)", "Basic (1-8)"].map((level) => {
+                  const selected = form.schoolLevel === level;
+                  return (
+                    <Box
+                      key={level}
+                      onClick={() =>
+                        setForm((f) => ({ ...f, schoolLevel: level }))
+                      }
+                      sx={{
+                        flex: 1,
+                        py: 1.5,
+                        textAlign: "center",
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        fontWeight: 500,
+                        fontSize: "0.85rem",
+                        border: "1.5px solid",
+                        borderColor: selected
                           ? "primary.main"
-                          : "grey.300",
-                      borderRadius: 2,
-                      px: 1.5,
-                      mr: 1,
-                      bgcolor:
-                        form.schoolLevel === "Secondary (1-12)"
-                          ? "primary.50"
+                          : "var(--color-border-tertiary)",
+                        bgcolor: selected
+                          ? "var(--color-background-info)"
                           : "transparent",
-                    }}
-                  />
-                  <FormControlLabel
-                    value="Basic (1-8)"
-                    control={<Radio size="small" />}
-                    label="Basic (1-8)"
-                    sx={{
-                      border: "1.5px solid",
-                      borderColor:
-                        form.schoolLevel === "Basic (1-8)"
-                          ? "primary.main"
-                          : "grey.300",
-                      borderRadius: 2,
-                      px: 1.5,
-                    }}
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl>
-                <FormLabel
-                  sx={{ fontWeight: 500, fontSize: "0.85rem", mb: 0.5 }}
-                >
-                  Management type *
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={form.managementType}
-                  onChange={set("managementType")}
-                >
-                  <FormControlLabel
-                    value="Community"
-                    control={<Radio size="small" />}
-                    label="Community"
-                    sx={{
-                      border: "1.5px solid",
-                      borderColor:
-                        form.managementType === "Community"
-                          ? "success.main"
-                          : "grey.300",
-                      borderRadius: 2,
-                      px: 1.5,
-                      mr: 1,
-                      bgcolor:
-                        form.managementType === "Community"
-                          ? "success.50"
-                          : "transparent",
-                    }}
-                  />
-                  <FormControlLabel
-                    value="Institutional"
-                    control={<Radio size="small" />}
-                    label="Institutional"
-                    sx={{
-                      border: "1.5px solid",
-                      borderColor:
-                        form.managementType === "Institutional"
-                          ? "success.main"
-                          : "grey.300",
-                      borderRadius: 2,
-                      px: 1.5,
-                    }}
-                  />
-                </RadioGroup>
-              </FormControl>
+                        color: selected ? "primary.main" : "text.secondary",
+                        transition: "all 0.15s",
+                        "&:hover": { borderColor: "primary.main" },
+                      }}
+                    >
+                      {level}
+                    </Box>
+                  );
+                })}
+              </Box>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -495,16 +401,6 @@ export default function AddSchool() {
                 ))}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Sanctioned teacher positions"
-                fullWidth
-                placeholder="e.g. 18"
-                value={form.sanctionedPositions}
-                onChange={set("sanctionedPositions")}
-                helperText="\u0926\u0930\u092c\u0928\u094d\u0926\u0940 \u2014 from government record"
-              />
-            </Grid>
           </Grid>
         </CardContent>
       </Card>
@@ -519,52 +415,15 @@ export default function AddSchool() {
           title="School location"
         />
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <TextField
-              label="Province"
-              required
-              fullWidth
-              select
-              value={form.province}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  province: e.target.value,
-                  district: "",
-                }))
-              }
-            >
-              {PROVINCES.map((p) => (
-                <MenuItem key={p} value={p}>
-                  {p}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="District"
-              required
-              fullWidth
-              select
-              value={form.district}
-              onChange={set("district")}
-            >
-              {districts.map((d) => (
-                <MenuItem key={d} value={d}>
-                  {d}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Municipality / Rural municipality"
+              label="Municipality"
               required
               fullWidth
               value={form.municipality}
               onChange={set("municipality")}
-              helperText="Auto-filled from your account"
+              error={Boolean(fieldErrors.municipality)}
+              helperText={fieldErrors.municipality || ""}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -575,6 +434,8 @@ export default function AddSchool() {
               select
               value={form.ward}
               onChange={set("ward")}
+              error={Boolean(fieldErrors.ward)}
+              helperText={fieldErrors.ward || ""}
             >
               {WARDS.map((w) => (
                 <MenuItem key={w} value={w}>
@@ -591,6 +452,8 @@ export default function AddSchool() {
               placeholder="e.g. Pulchowk, Patan"
               value={form.tole}
               onChange={set("tole")}
+              error={Boolean(fieldErrors.tole)}
+              helperText={fieldErrors.tole || ""}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -603,26 +466,8 @@ export default function AddSchool() {
               placeholder="Official address as on documents..."
               value={form.addressNp}
               onChange={set("addressNp")}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="GPS latitude"
-              fullWidth
-              placeholder="e.g. 27.6644"
-              value={form.gpsLat}
-              onChange={set("gpsLat")}
-              helperText="Optional \u2014 for map display"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="GPS longitude"
-              fullWidth
-              placeholder="e.g. 85.3188"
-              value={form.gpsLng}
-              onChange={set("gpsLng")}
-              helperText="Optional \u2014 for map display"
+              error={Boolean(fieldErrors.addressNp)}
+              helperText={fieldErrors.addressNp || ""}
             />
           </Grid>
         </Grid>
@@ -647,6 +492,8 @@ export default function AddSchool() {
                 select
                 value={form.academicYear}
                 onChange={set("academicYear")}
+                error={Boolean(fieldErrors.academicYear)}
+                helperText={fieldErrors.academicYear || ""}
               >
                 {ACADEMIC_YEARS.map((y) => (
                   <MenuItem key={y} value={y}>
@@ -654,16 +501,6 @@ export default function AddSchool() {
                   </MenuItem>
                 ))}
               </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Total enrolled students"
-                fullWidth
-                placeholder="e.g. 412"
-                value={form.totalStudents}
-                onChange={set("totalStudents")}
-                helperText="Current year total count"
-              />
             </Grid>
           </Grid>
         </CardContent>
@@ -702,57 +539,6 @@ export default function AddSchool() {
 
       <Card variant="outlined">
         <CardContent>
-          <SectionHeader
-            icon={<SchoolIcon fontSize="small" color="secondary" />}
-            title="Sections per grade"
-          />
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Grades 1-5 (sections)"
-                fullWidth
-                select
-                value={form.sectionsPrimary}
-                onChange={set("sectionsPrimary")}
-              >
-                {SECTION_OPTIONS.map((o) => (
-                  <MenuItem key={o} value={o}>
-                    {o}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Grades 6-8 (sections)"
-                fullWidth
-                select
-                value={form.sectionsMiddle}
-                onChange={set("sectionsMiddle")}
-              >
-                {SECTION_OPTIONS.map((o) => (
-                  <MenuItem key={o} value={o}>
-                    {o}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Grades 9-10 (sections)"
-                fullWidth
-                select
-                value={form.sectionsSecondary}
-                onChange={set("sectionsSecondary")}
-              >
-                {SECTION_OPTIONS.map((o) => (
-                  <MenuItem key={o} value={o}>
-                    {o}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-          </Grid>
           <FormLabel
             sx={{
               fontWeight: 500,
@@ -800,6 +586,8 @@ export default function AddSchool() {
                 placeholder="e.g. Hari Prasad Sharma"
                 value={form.principalName}
                 onChange={set("principalName")}
+                error={Boolean(fieldErrors.principalName)}
+                helperText={fieldErrors.principalName || ""}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -819,7 +607,10 @@ export default function AddSchool() {
                 placeholder="98XXXXXXXX"
                 value={form.principalPhone}
                 onChange={set("principalPhone")}
-                helperText="Used as login username"
+                error={Boolean(fieldErrors.principalPhone)}
+                helperText={
+                  fieldErrors.principalPhone || "Used as login username"
+                }
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">+977</InputAdornment>
@@ -845,15 +636,6 @@ export default function AddSchool() {
                 onChange={set("principalCitizenship")}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Appointment date (BS)"
-                fullWidth
-                placeholder="e.g. Baisakh 1, 2081"
-                value={form.principalAppoint}
-                onChange={set("principalAppoint")}
-              />
-            </Grid>
           </Grid>
         </CardContent>
       </Card>
@@ -873,7 +655,10 @@ export default function AddSchool() {
                 placeholder="Set a temporary password"
                 value={form.password}
                 onChange={set("password")}
-                helperText="Principal must change on first login"
+                error={Boolean(fieldErrors.password)}
+                helperText={
+                  fieldErrors.password || "Principal must change on first login"
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -921,26 +706,15 @@ export default function AddSchool() {
         <ReviewSection
           title="School identity"
           rows={[
-            ["Name (English)", form.nameEn],
-            ["Name (Nepali)", form.nameNp],
+            ["Name", form.nameEn],
             ["Registration no.", form.regNo],
-            ["EMIS code", form.emis],
-            [
-              "Type",
-              form.schoolLevel.split(" ")[0] + " \u00b7 " + form.managementType,
-            ],
+            ["Type", form.schoolLevel],
             ["Established", form.established],
           ]}
         />
         <ReviewSection
           title="Location"
           rows={[
-            [
-              "Province / District",
-              form.province.replace(" Province", "") +
-                " \u00b7 " +
-                form.district,
-            ],
             ["Municipality", form.municipality],
             ["Ward / Tole", form.ward + " \u00b7 " + form.tole],
           ]}
@@ -1058,7 +832,7 @@ export default function AddSchool() {
           <Button
             variant="contained"
             endIcon={<NavigateNextIcon />}
-            onClick={() => setStep((s) => s + 1)}
+            onClick={handleNext}
             sx={{ borderRadius: 2, px: 3 }}
           >
             {nextLabels[step]}

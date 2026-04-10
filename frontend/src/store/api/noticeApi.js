@@ -4,6 +4,21 @@ export const noticeApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
     getNotices: build.query({
       query: (params) => ({ url: "/notices", params }),
+      transformResponse: (res) =>
+        Array.isArray(res) ? res : res.notices || [],
+      providesTags: ["Notices"],
+    }),
+    getNoticesPaginated: build.query({
+      query: ({ page = 1, limit = 20, search, category, from } = {}) => ({
+        url: "/notices",
+        params: {
+          page,
+          limit,
+          ...(search && { search }),
+          ...(category && { category }),
+          ...(from && { from }),
+        },
+      }),
       providesTags: ["Notices"],
     }),
     createNotice: build.mutation({
@@ -19,6 +34,7 @@ export const noticeApi = apiSlice.injectEndpoints({
 
 export const {
   useGetNoticesQuery,
+  useGetNoticesPaginatedQuery,
   useCreateNoticeMutation,
   useDeleteNoticeMutation,
 } = noticeApi;

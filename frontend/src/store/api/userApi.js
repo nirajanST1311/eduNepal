@@ -33,6 +33,22 @@ export const userApi = apiSlice.injectEndpoints({
         body,
       }),
     }),
+    bulkUploadTeachers: build.mutation({
+      query: (formData) => ({
+        url: "/bulk-upload/teachers",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Users"],
+    }),
+    bulkUploadStudents: build.mutation({
+      query: (formData) => ({
+        url: "/bulk-upload/students",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Users", "Students"],
+    }),
   }),
 });
 
@@ -43,4 +59,6 @@ export const {
   useUpdateUserMutation,
   useDeactivateUserMutation,
   useResetUserPasswordMutation,
+  useBulkUploadTeachersMutation,
+  useBulkUploadStudentsMutation,
 } = userApi;

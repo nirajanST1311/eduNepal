@@ -16,6 +16,7 @@ import GradeAssignment from "@/pages/teacher/GradeAssignment";
 import TeacherAttendance from "@/pages/teacher/TeacherAttendance";
 import TeacherStudents from "@/pages/teacher/TeacherStudents";
 import TeacherStudentDetail from "@/pages/teacher/TeacherStudentDetail";
+import TeacherNotices from "@/pages/teacher/TeacherNotices";
 // Student
 import StudentHome from "@/pages/student/StudentHome";
 import MySubjects from "@/pages/student/MySubjects";
@@ -27,12 +28,14 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminTeachers from "@/pages/admin/AdminTeachers";
 import AdminStudents from "@/pages/admin/AdminStudents";
 import AdminClasses from "@/pages/admin/AdminClasses";
+import AdminSubjects from "@/pages/admin/AdminSubjects";
 import AdminNotices from "@/pages/admin/AdminNotices";
 // Super Admin
 import SuperadminDashboard from "@/pages/superadmin/SuperadminDashboard";
 import SchoolList from "@/pages/superadmin/SchoolList";
 import SchoolDetail from "@/pages/superadmin/SchoolDetail";
 import SuperadminNotices from "@/pages/superadmin/SuperadminNotices";
+import AddNotice from "@/pages/superadmin/AddNotice";
 import SuperadminSettings from "@/pages/superadmin/SuperadminSettings";
 import SuperadminPrincipals from "@/pages/superadmin/SuperadminPrincipals";
 
@@ -80,6 +83,7 @@ function App() {
           />
           <Route path="/teacher/attendance" element={<TeacherAttendance />} />
           <Route path="/teacher/students" element={<TeacherStudents />} />
+          <Route path="/teacher/notices" element={<TeacherNotices />} />
           <Route
             path="/teacher/students/:studentId"
             element={<TeacherStudentDetail />}
@@ -109,6 +113,7 @@ function App() {
           <Route path="/admin/teachers" element={<AdminTeachers />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/classes" element={<AdminClasses />} />
+          <Route path="/admin/subjects" element={<AdminSubjects />} />
           <Route path="/admin/notices" element={<AdminNotices />} />
           <Route path="/admin/profile" element={<ProfilePage />} />
           <Route path="/admin/change-password" element={<ChangePassword />} />
@@ -130,6 +135,7 @@ function App() {
             element={<SchoolDetail />}
           />
           <Route path="/superadmin/notices" element={<SuperadminNotices />} />
+          <Route path="/superadmin/notices/create" element={<AddNotice />} />
           <Route
             path="/superadmin/principals"
             element={<SuperadminPrincipals />}

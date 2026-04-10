@@ -6,6 +6,18 @@ export const schoolApi = apiSlice.injectEndpoints({
       query: () => "/schools",
       providesTags: ["Schools"],
     }),
+    getSchoolsPaginated: build.query({
+      query: ({ page = 1, limit = 20, search = "", status = "" } = {}) => ({
+        url: "/schools",
+        params: {
+          page,
+          limit,
+          search,
+          ...(status && status !== "all" ? { status } : {}),
+        },
+      }),
+      providesTags: ["Schools"],
+    }),
     getSchool: build.query({
       query: (id) => `/schools/${id}`,
       providesTags: (r, e, id) => [{ type: "Schools", id }],
@@ -30,6 +42,7 @@ export const schoolApi = apiSlice.injectEndpoints({
 
 export const {
   useGetSchoolsQuery,
+  useGetSchoolsPaginatedQuery,
   useGetSchoolQuery,
   useGetSchoolStatsQuery,
   useCreateSchoolMutation,

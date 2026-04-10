@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -7,30 +7,79 @@ import {
   FormControl,
   Button,
   LinearProgress,
+  InputBase,
+  Skeleton,
+  Collapse,
   IconButton,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
+import ExpandLessOutlinedIcon from "@mui/icons-material/ExpandLessOutlined";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
+import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetChaptersQuery } from "@/store/api/chapterApi";
 
-const typeChips = ["Notes", "Video", "PDF", "Quiz"];
+const typeConfig = {
+  notes: {
+    label: "Notes",
+    icon: ArticleOutlinedIcon,
+    color: "var(--color-text-info)",
+  },
+  video: { label: "Video", icon: VideocamOutlinedIcon, color: "#7c3aed" },
+  pdf: {
+    label: "PDF",
+    icon: PictureAsPdfOutlinedIcon,
+    color: "var(--color-text-danger)",
+  },
+  quiz: {
+    label: "Quiz",
+    icon: QuizOutlinedIcon,
+    color: "var(--color-text-warning)",
+  },
+};
+
+const statusConfig = {
+  published: {
+    label: "Published",
+    color: "var(--color-text-success)",
+    bg: "var(--color-background-success)",
+  },
+  draft: {
+    label: "Draft",
+    color: "var(--color-text-warning)",
+    bg: "var(--color-background-warning)",
+  },
+  not_started: {
+    label: "Not started",
+    color: "var(--color-text-secondary)",
+    bg: "var(--color-background-secondary)",
+  },
+};
 
 export default function TeacherContent() {
   const { user } = useSelector((s) => s.auth);
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState({});
   const navigate = useNavigate();
 
-  const { data: classes } = useGetClassesQuery({ schoolId: user?.schoolId });
-  const { data: subjects } = useGetSubjectsQuery(
+  const { data: classes, isLoading: loadingClasses } = useGetClassesQuery({
+    schoolId: user?.schoolId,
+  });
+  const { data: subjects, isLoading: loadingSubjects } = useGetSubjectsQuery(
     classId ? { classId } : undefined,
     { skip: !classId },
   );
-  const { data: chapters } = useGetChaptersQuery(
+  const { data: chapters, isLoading: loadingChapters } = useGetChaptersQuery(
     subjectId ? { subjectId } : undefined,
     { skip: !subjectId },
   );
@@ -38,14 +87,26 @@ export default function TeacherContent() {
   const selectedClass = (classes || []).find((c) => c._id === classId);
   const selectedSubject = (subjects || []).find((s) => s._id === subjectId);
 
+  const filtered = useMemo(() => {
+    if (!chapters) return [];
+    if (!search.trim()) return chapters;
+    const q = search.toLowerCase();
+    return chapters.filter((ch) => ch.title.toLowerCase().includes(q));
+  }, [chapters, search]);
+
   const published = (chapters || []).filter(
     (c) => c.status === "published",
   ).length;
+  const drafts = (chapters || []).filter((c) => c.status === "draft").length;
   const total = (chapters || []).length;
   const progress = total ? Math.round((published / total) * 100) : 0;
 
+  const toggleExpand = (id) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
   return (
     <Box>
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -63,27 +124,48 @@ export default function TeacherContent() {
           >
             {selectedClass && selectedSubject
               ? `Class ${selectedClass.grade} · ${selectedSubject.name}`
-              : "Select a class and subject"}
+              : "Select a class and subject to manage chapters"}
           </Typography>
         </Box>
-        <IconButton size="small">
-          <MoreHorizIcon />
-        </IconButton>
+        {subjectId && (
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddOutlinedIcon />}
+            onClick={() =>
+              navigate(`/teacher/content/add?subjectId=${subjectId}`)
+            }
+            sx={{ textTransform: "none" }}
+          >
+            Add chapter
+          </Button>
+        )}
       </Box>
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center" }}>
-        <FormControl sx={{ minWidth: 200 }}>
+      {/* Filters */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mb: 3,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <FormControl sx={{ minWidth: 180 }}>
           <Select
             value={classId}
             displayEmpty
+            size="small"
             onChange={(e) => {
               setClassId(e.target.value);
               setSubjectId("");
+              setSearch("");
             }}
             sx={{ bgcolor: "var(--color-background-primary)" }}
           >
             <MenuItem value="" disabled>
-              Class
+              Select class
             </MenuItem>
             {(classes || []).map((c) => (
               <MenuItem key={c._id} value={c._id}>
@@ -92,16 +174,20 @@ export default function TeacherContent() {
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{ minWidth: 200 }}>
+        <FormControl sx={{ minWidth: 180 }}>
           <Select
             value={subjectId}
             displayEmpty
-            onChange={(e) => setSubjectId(e.target.value)}
+            size="small"
+            onChange={(e) => {
+              setSubjectId(e.target.value);
+              setSearch("");
+            }}
             disabled={!classId}
             sx={{ bgcolor: "var(--color-background-primary)" }}
           >
             <MenuItem value="" disabled>
-              Subject
+              Select subject
             </MenuItem>
             {(subjects || []).map((s) => (
               <MenuItem key={s._id} value={s._id}>
@@ -111,75 +197,156 @@ export default function TeacherContent() {
           </Select>
         </FormControl>
         {subjectId && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={() =>
-              navigate(`/teacher/content/add?subjectId=${subjectId}`)
-            }
-            sx={{ whiteSpace: "nowrap", ml: "auto" }}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              bgcolor: "var(--color-background-primary)",
+              border: "0.5px solid var(--color-border-tertiary)",
+              borderRadius: "var(--border-radius-md)",
+              px: 1.5,
+              height: 40,
+              ml: "auto",
+              minWidth: 200,
+            }}
           >
-            Add chapter
-          </Button>
+            <SearchOutlinedIcon
+              sx={{ fontSize: 18, color: "var(--color-text-secondary)" }}
+            />
+            <InputBase
+              placeholder="Search chapters…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{ fontSize: "13px", flex: 1 }}
+            />
+          </Box>
         )}
       </Box>
 
-      {subjectId && (
+      {/* Loading */}
+      {subjectId && loadingChapters && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton
+              key={i}
+              variant="rounded"
+              height={80}
+              sx={{ borderRadius: "var(--border-radius-md)" }}
+            />
+          ))}
+        </Box>
+      )}
+
+      {/* Content area */}
+      {subjectId && !loadingChapters && (
         <>
-          <Box
-            sx={{
-              bgcolor: "var(--color-background-primary)",
-              border: "0.5px solid var(--color-border-tertiary)",
-              borderRadius: "var(--border-radius-lg)",
-              mb: 3,
-              py: 1.5,
-              px: 2,
-            }}
-          >
+          {/* Stats summary */}
+          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mb: 1,
+                flex: 1,
+                bgcolor: "var(--color-background-primary)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                borderRadius: "var(--border-radius-lg)",
+                py: 1.5,
+                px: 2,
               }}
             >
-              <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
-                Syllabus progress
-              </Typography>
-              <Typography
+              <Box
                 sx={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color:
-                    progress > 50
-                      ? "var(--color-text-success)"
-                      : "var(--color-text-secondary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 1,
                 }}
               >
-                {progress}% complete
-              </Typography>
+                <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                  Syllabus progress
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color:
+                      progress >= 50
+                        ? "var(--color-text-success)"
+                        : "var(--color-text-secondary)",
+                  }}
+                >
+                  {progress}%
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                color="success"
+              />
+              <Box sx={{ display: "flex", gap: 3, mt: 1.5 }}>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{ fontWeight: 600, color: "var(--color-text-success)" }}
+                  >
+                    {published}
+                  </Box>{" "}
+                  published
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{ fontWeight: 600, color: "var(--color-text-warning)" }}
+                  >
+                    {drafts}
+                  </Box>{" "}
+                  drafts
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <Box component="span" sx={{ fontWeight: 600 }}>
+                    {total}
+                  </Box>{" "}
+                  total
+                </Typography>
+              </Box>
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              color="success"
-            />
           </Box>
 
-          <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
-            Chapters
-          </Typography>
+          {/* Chapter list header */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+              Chapters
+              {search
+                ? ` · ${filtered.length} result${filtered.length !== 1 ? "s" : ""}`
+                : ""}
+            </Typography>
+          </Box>
 
-          {(chapters || []).map((ch, i) => {
-            const statusLabel =
-              ch.status === "published"
-                ? "Published"
-                : ch.status === "draft"
-                  ? "Draft"
-                  : "Not started";
-            const isStarted = ch.status !== "not_started";
+          {/* Chapters */}
+          {filtered.map((ch, i) => {
+            const st = statusConfig[ch.status] || statusConfig.not_started;
+            const isExpanded = expanded[ch._id];
             return (
               <Box
                 key={ch._id}
@@ -188,11 +355,18 @@ export default function TeacherContent() {
                   border: "0.5px solid var(--color-border-tertiary)",
                   borderRadius: "var(--border-radius-md)",
                   mb: 1.5,
-                  py: 1.5,
-                  px: 2,
+                  overflow: "hidden",
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    py: 1.5,
+                    px: 2,
+                  }}
+                >
                   <Box
                     sx={{
                       width: 32,
@@ -206,98 +380,219 @@ export default function TeacherContent() {
                       fontSize: "13px",
                       color: "var(--color-text-secondary)",
                       flexShrink: 0,
-                      mt: 0.25,
                     }}
                   >
                     {i + 1}
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      sx={{ fontSize: "13px", fontWeight: 500, mb: 0.25 }}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 0.25,
+                      }}
                     >
-                      {ch.title}
-                    </Typography>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                        {ch.title}
+                      </Typography>
+                      <Box
+                        component="span"
+                        sx={{
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: "4px",
+                          bgcolor: st.bg,
+                          color: st.color,
+                        }}
+                      >
+                        {st.label}
+                      </Box>
+                    </Box>
                     <Typography
                       sx={{
                         fontSize: "12px",
                         color: "var(--color-text-secondary)",
                       }}
                     >
-                      {ch.topicCount || 0} topic
-                      {ch.topicCount !== 1 ? "s" : ""} · {statusLabel}
+                      {ch.topicCount || 0} topic{ch.topicCount !== 1 ? "s" : ""}
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 0.5, mt: 1 }}>
-                      {typeChips.map((t) => {
-                        const key = t.toLowerCase();
-                        const has = ch.contentTypes?.includes(key);
-                        return (
-                          <Box
-                            component="span"
-                            key={t}
-                            sx={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              fontSize: "11px",
-                              height: 22,
-                              px: 1,
-                              borderRadius: "4px",
-                              fontWeight: 500,
-                              bgcolor: has
-                                ? "var(--color-background-success)"
-                                : "transparent",
-                              color: has
-                                ? "var(--color-text-success)"
-                                : "var(--color-text-secondary)",
-                              border: has
-                                ? "none"
-                                : "0.5px solid var(--color-border-tertiary)",
-                            }}
-                          >
-                            {t}
-                          </Box>
-                        );
-                      })}
-                    </Box>
                   </Box>
+                  {/* Content type icons */}
+                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                    {Object.entries(typeConfig).map(([key, cfg]) => {
+                      const has = ch.contentTypes?.includes(key);
+                      const Icon = cfg.icon;
+                      return (
+                        <Box
+                          key={key}
+                          title={cfg.label}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "6px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: has ? `${cfg.color}14` : "transparent",
+                            border: has
+                              ? "none"
+                              : "0.5px solid var(--color-border-tertiary)",
+                          }}
+                        >
+                          <Icon
+                            sx={{
+                              fontSize: 16,
+                              color: has
+                                ? cfg.color
+                                : "var(--color-text-secondary)",
+                              opacity: has ? 1 : 0.4,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                  {ch.topics?.length > 0 && (
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleExpand(ch._id)}
+                    >
+                      {isExpanded ? (
+                        <ExpandLessOutlinedIcon fontSize="small" />
+                      ) : (
+                        <ExpandMoreOutlinedIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  )}
                   <Button
                     variant="outlined"
                     size="small"
-                    sx={{ minWidth: 60, fontSize: "12px", flexShrink: 0 }}
+                    sx={{
+                      minWidth: 60,
+                      fontSize: "12px",
+                      flexShrink: 0,
+                      textTransform: "none",
+                    }}
                     onClick={() => navigate(`/teacher/content/${ch._id}`)}
                   >
-                    {isStarted ? "Edit" : "Start"}
+                    {ch.status !== "not_started" ? "Edit" : "Start"}
                   </Button>
                 </Box>
+                {/* Expandable topics */}
+                {ch.topics?.length > 0 && (
+                  <Collapse in={isExpanded}>
+                    <Box sx={{ px: 2, pb: 1.5, pl: 7 }}>
+                      {ch.topics.map((t, ti) => (
+                        <Box
+                          key={t._id || ti}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            py: 0.75,
+                            borderTop:
+                              ti === 0
+                                ? "0.5px solid var(--color-border-tertiary)"
+                                : "none",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor:
+                                t.status === "published"
+                                  ? "var(--color-text-success)"
+                                  : "var(--color-border-tertiary)",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Typography
+                            sx={{
+                              fontSize: "12px",
+                              color: "var(--color-text-secondary)",
+                            }}
+                          >
+                            {t.title || `Topic ${ti + 1}`}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Collapse>
+                )}
               </Box>
             );
           })}
 
-          {(chapters || []).length === 0 && (
-            <Typography
-              sx={{
-                fontSize: "13px",
-                color: "var(--color-text-secondary)",
-                textAlign: "center",
-                py: 4,
-              }}
-            >
-              No chapters yet — add one to get started
-            </Typography>
+          {filtered.length === 0 && search && (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography
+                sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+              >
+                No chapters matching "{search}"
+              </Typography>
+            </Box>
+          )}
+
+          {filtered.length === 0 && !search && (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <FolderOpenOutlinedIcon
+                sx={{
+                  fontSize: 40,
+                  color: "var(--color-text-secondary)",
+                  mb: 1,
+                  opacity: 0.5,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "13px",
+                  color: "var(--color-text-secondary)",
+                  mb: 2,
+                }}
+              >
+                No chapters yet
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddOutlinedIcon />}
+                onClick={() =>
+                  navigate(`/teacher/content/add?subjectId=${subjectId}`)
+                }
+                sx={{ textTransform: "none" }}
+              >
+                Add first chapter
+              </Button>
+            </Box>
           )}
         </>
       )}
 
-      {!subjectId && (
-        <Typography
-          sx={{
-            fontSize: "13px",
-            color: "var(--color-text-secondary)",
-            textAlign: "center",
-            py: 6,
-          }}
-        >
-          Select a class and subject to view content
-        </Typography>
+      {/* Empty state */}
+      {!subjectId && !loadingClasses && !loadingSubjects && (
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <FolderOpenOutlinedIcon
+            sx={{
+              fontSize: 48,
+              color: "var(--color-text-secondary)",
+              mb: 1.5,
+              opacity: 0.4,
+            }}
+          />
+          <Typography sx={{ fontSize: "14px", fontWeight: 500, mb: 0.5 }}>
+            Select a class and subject
+          </Typography>
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            Choose from the dropdowns above to view and manage content
+          </Typography>
+        </Box>
       )}
     </Box>
   );

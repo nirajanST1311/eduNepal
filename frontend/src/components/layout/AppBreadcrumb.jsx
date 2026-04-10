@@ -1,6 +1,29 @@
+import { createContext, useContext, useEffect } from "react";
 import { Typography, Breadcrumbs } from "@mui/material";
 import { useLocation, Link } from "react-router-dom";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+
+// Context for dynamic breadcrumb label overrides (set at layout level)
+export const BreadcrumbContext = createContext({
+  overrides: {},
+  setOverrides: () => {},
+});
+
+/** Hook for child pages to set a breadcrumb label for a dynamic segment (e.g. an ObjectId) */
+export function useBreadcrumbOverride(id, label) {
+  const { setOverrides } = useContext(BreadcrumbContext);
+  useEffect(() => {
+    if (id && label) {
+      setOverrides((prev) => ({ ...prev, [id]: label }));
+      return () =>
+        setOverrides((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+    }
+  }, [id, label, setOverrides]);
+}
 
 const labelMap = {
   superadmin: "Super Admin",
@@ -27,8 +50,11 @@ const labelMap = {
   grade: "Grade",
 };
 
+const isObjectId = (s) => /^[a-f\d]{24}$/i.test(s);
+
 export default function AppBreadcrumb() {
   const { pathname } = useLocation();
+  const { overrides } = useContext(BreadcrumbContext);
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length <= 1) return null;
@@ -41,7 +67,9 @@ export default function AppBreadcrumb() {
       {segments.map((seg, i) => {
         const path = "/" + segments.slice(0, i + 1).join("/");
         const label =
-          labelMap[seg] || seg.charAt(0).toUpperCase() + seg.slice(1);
+          overrides[seg] ||
+          labelMap[seg] ||
+          (isObjectId(seg) ? "…" : seg.charAt(0).toUpperCase() + seg.slice(1));
         const isLast = i === segments.length - 1;
 
         if (isLast) {

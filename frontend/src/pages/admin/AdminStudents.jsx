@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -15,14 +15,34 @@ import {
   DialogActions,
   IconButton,
   MenuItem,
+  InputAdornment,
+  Drawer,
+  Tooltip,
+  Skeleton,
+  Avatar,
+  FormControl,
+  Select,
+  Alert,
+  LinearProgress,
 } from "@mui/material";
-import { Edit, PersonOff } from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import PersonOffOutlinedIcon from "@mui/icons-material/PersonOffOutlined";
+import CloseIcon from "@mui/icons-material/Close";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import { useSelector } from "react-redux";
 import {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeactivateUserMutation,
+  useBulkUploadStudentsMutation,
 } from "@/store/api/userApi";
 import { useGetClassesQuery } from "@/store/api/classApi";
 
@@ -33,7 +53,6 @@ const empty = {
   password: "",
   rollNumber: "",
   classId: "",
-  section: "",
 };
 
 export default function AdminStudents() {
@@ -48,19 +67,43 @@ export default function AdminStudents() {
   const [createUser, { isLoading: creating }] = useCreateUserMutation();
   const [updateUser, { isLoading: updating }] = useUpdateUserMutation();
   const [deactivateUser] = useDeactivateUserMutation();
+  const [bulkUploadStudents, { isLoading: uploading }] =
+    useBulkUploadStudentsMutation();
 
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadResult, setUploadResult] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const filtered = students.filter((s) =>
-    s.name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = useMemo(() => {
+    let list = students;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) ||
+          s.email?.toLowerCase().includes(q) ||
+          s.rollNumber?.toLowerCase().includes(q),
+      );
+    }
+    if (classFilter) {
+      list = list.filter((s) => s.classId?._id === classFilter);
+    }
+    return list;
+  }, [students, search, classFilter]);
 
   const openCreate = () => {
     setEditing(null);
     setForm(empty);
+    setFieldErrors({});
     setOpen(true);
   };
 
@@ -72,56 +115,191 @@ export default function AdminStudents() {
       phone: s.phone || "",
       rollNumber: s.rollNumber || "",
       classId: s.classId?._id || "",
-      section: s.section || "",
     });
+    setFieldErrors({});
     setOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (editing) {
-      await updateUser({ id: editing, ...form }).unwrap();
-    } else {
-      await createUser({
-        ...form,
-        role: "STUDENT",
-        schoolId: user?.schoolId,
-      }).unwrap();
+    const errs = {};
+    if (!form.name.trim()) errs.name = "Name is required";
+    if (!form.email.trim()) errs.email = "Email is required";
+    if (!editing && !form.password.trim())
+      errs.password = "Password is required";
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    try {
+      if (editing) {
+        await updateUser({ id: editing, ...form }).unwrap();
+      } else {
+        await createUser({
+          ...form,
+          role: "STUDENT",
+          schoolId: user?.schoolId,
+        }).unwrap();
+      }
+      setOpen(false);
+      setForm(empty);
+      setEditing(null);
+    } catch {
+      /* handled by RTK */
     }
-    setOpen(false);
-    setForm(empty);
-    setEditing(null);
   };
 
-  const handleDeactivate = async (id) => {
-    await deactivateUser(id).unwrap();
+  const handleDeactivate = async () => {
+    if (!deactivateTarget) return;
+    try {
+      await deactivateUser(deactivateTarget._id).unwrap();
+    } catch {
+      /* handled by RTK */
+    }
+    setDeactivateTarget(null);
   };
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const set = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (fieldErrors[field]) setFieldErrors((p) => ({ ...p, [field]: "" }));
+  };
+
+  const handleUploadOpen = () => {
+    setUploadFile(null);
+    setUploadResult(null);
+    setUploadOpen(true);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setUploadFile(file);
+  };
+
+  const handleBulkUpload = async () => {
+    if (!uploadFile) return;
+    const fd = new FormData();
+    fd.append("file", uploadFile);
+    try {
+      const res = await bulkUploadStudents(fd).unwrap();
+      setUploadResult(res);
+      setUploadFile(null);
+    } catch (err) {
+      setUploadResult({
+        errors: [
+          {
+            row: 0,
+            error: err?.data?.message || "Upload failed. Please try again.",
+          },
+        ],
+        created: [],
+      });
+    }
+  };
+
+  const downloadSample = () => {
+    const base = import.meta.env.VITE_API_URL || "/api";
+    const token = localStorage.getItem("token");
+    window.open(`${base}/bulk-upload/sample/students?token=${token}`, "_blank");
+  };
+
+  const classLabel = (s) =>
+    s.classId
+      ? `${s.classId.grade}${s.classId.section ? ` ${s.classId.section}` : ""}`
+      : "—";
+
+  const initials = (name) =>
+    name
+      ?.split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
 
   return (
     <Box>
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: "14px",
+          mb: 0.5,
         }}
       >
         <Typography sx={{ fontSize: "22px", fontWeight: 500 }}>
           Students
         </Typography>
-        <Button size="small" onClick={openCreate}>
-          Add student
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileOutlinedIcon />}
+            onClick={handleUploadOpen}
+            sx={{ textTransform: "none" }}
+          >
+            Upload Excel
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openCreate}
+            sx={{ textTransform: "none" }}
+          >
+            Add Student
+          </Button>
+        </Box>
       </Box>
-      <TextField
-        size="small"
-        placeholder="Search students…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mb: "14px", width: 260 }}
-      />
+      <Typography
+        sx={{ fontSize: "13px", color: "var(--color-text-secondary)", mb: 3 }}
+      >
+        {students.length} student{students.length !== 1 ? "s" : ""} enrolled
+      </Typography>
+
+      {/* Filters */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 2.5, flexWrap: "wrap" }}>
+        <TextField
+          placeholder="Search by name, email or roll…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+          sx={{ maxWidth: 320, width: "100%" }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon
+                  sx={{ fontSize: 18, color: "var(--color-text-secondary)" }}
+                />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <Select
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            displayEmpty
+          >
+            <MenuItem value="">All Classes</MenuItem>
+            {classes.map((c) => (
+              <MenuItem key={c._id} value={c._id}>
+                Class {c.grade} {c.section}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Showing count */}
+      {(search || classFilter) && (
+        <Typography
+          sx={{
+            fontSize: "12px",
+            color: "var(--color-text-secondary)",
+            mb: 1.5,
+          }}
+        >
+          Showing {filtered.length} of {students.length}
+        </Typography>
+      )}
+
+      {/* Table */}
       <Box
         sx={{
           bgcolor: "var(--color-background-primary)",
@@ -133,50 +311,128 @@ export default function AdminStudents() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
+              <TableCell>Student</TableCell>
               <TableCell>Roll #</TableCell>
               <TableCell>Class</TableCell>
+              <TableCell>Email</TableCell>
               <TableCell>Phone</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filtered.map((s) => (
-              <TableRow key={s._id}>
-                <TableCell>{s.name}</TableCell>
-                <TableCell>{s.email}</TableCell>
-                <TableCell>{s.rollNumber || "—"}</TableCell>
-                <TableCell>
-                  {s.classId
-                    ? `${s.classId.grade} ${s.classId.section || ""}`
-                    : "—"}
-                </TableCell>
-                <TableCell>{s.phone || "—"}</TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={() => openEdit(s)}>
-                    <Edit fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeactivate(s._id)}
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {[1, 2, 3, 4, 5, 6].map((c) => (
+                      <TableCell key={c}>
+                        <Skeleton width={c === 1 ? 120 : 70} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              : filtered.map((s) => (
+                  <TableRow
+                    key={s._id}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "var(--color-background-secondary)",
+                      },
+                    }}
+                    onClick={() => setDetail(s)}
                   >
-                    <PersonOff fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                      >
+                        <Avatar
+                          src={s.avatar}
+                          sx={{
+                            width: 30,
+                            height: 30,
+                            fontSize: "11px",
+                            fontWeight: 500,
+                            bgcolor: "var(--color-background-success)",
+                            color: "var(--color-text-success)",
+                          }}
+                        >
+                          {initials(s.name)}
+                        </Avatar>
+                        <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                          {s.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        sx={{
+                          fontSize: "13px",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        {s.rollNumber || "—"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box
+                        component="span"
+                        sx={{
+                          px: 0.75,
+                          py: 0.15,
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          bgcolor: "var(--color-background-info)",
+                          color: "var(--color-text-info)",
+                        }}
+                      >
+                        {classLabel(s)}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        sx={{
+                          fontSize: "13px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        {s.email}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{s.phone || "—"}</TableCell>
+                    <TableCell
+                      align="right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => openEdit(s)}>
+                          <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Deactivate">
+                        <IconButton
+                          size="small"
+                          sx={{ color: "var(--color-text-danger)" }}
+                          onClick={() => setDeactivateTarget(s)}
+                        >
+                          <PersonOffOutlinedIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
             {!isLoading && filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={6} sx={{ textAlign: "center", py: 4 }}>
                   <Typography
                     sx={{
-                      fontSize: "13px",
+                      fontSize: "14px",
                       color: "var(--color-text-secondary)",
                     }}
                   >
-                    No students found.
+                    {search || classFilter
+                      ? "No students match your filters"
+                      : "No students added yet"}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -185,22 +441,34 @@ export default function AdminStudents() {
         </Table>
       </Box>
 
+      {/* Create / Edit Dialog */}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>{editing ? "Edit student" : "Add student"}</DialogTitle>
+        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>
+          {editing ? "Edit Student" : "Add Student"}
+        </DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
         >
-          <TextField label="Name" value={form.name} onChange={set("name")} />
+          <TextField
+            label="Full Name"
+            value={form.name}
+            onChange={set("name")}
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name}
+          />
           <TextField
             label="Email"
             type="email"
             value={form.email}
             onChange={set("email")}
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email}
+            disabled={!!editing}
           />
           <TextField
             label="Roll Number"
@@ -216,7 +484,7 @@ export default function AdminStudents() {
             <MenuItem value="">None</MenuItem>
             {classes.map((c) => (
               <MenuItem key={c._id} value={c._id}>
-                {c.grade} {c.section}
+                Class {c.grade} {c.section}
               </MenuItem>
             ))}
           </TextField>
@@ -227,18 +495,336 @@ export default function AdminStudents() {
               type="password"
               value={form.password}
               onChange={set("password")}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
             />
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setOpen(false)}
+            sx={{ textTransform: "none", color: "text.primary" }}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={creating || updating || !form.name || !form.email}
+            disabled={creating || updating}
+            sx={{ textTransform: "none" }}
           >
-            {editing ? "Save" : "Create"}
+            {creating || updating
+              ? "Saving…"
+              : editing
+                ? "Save Changes"
+                : "Create Student"}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Deactivate Confirmation */}
+      <Dialog
+        open={!!deactivateTarget}
+        onClose={() => setDeactivateTarget(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500, pb: 0.5 }}>
+          Deactivate Student
+        </DialogTitle>
+        <DialogContent>
+          <Typography
+            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+          >
+            Are you sure you want to deactivate{" "}
+            <strong>{deactivateTarget?.name}</strong>? They will no longer be
+            able to log in.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setDeactivateTarget(null)}
+            sx={{ textTransform: "none", color: "text.primary" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeactivate}
+            sx={{ textTransform: "none" }}
+          >
+            Deactivate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Detail Drawer */}
+      <Drawer anchor="right" open={!!detail} onClose={() => setDetail(null)}>
+        {detail && (
+          <Box sx={{ width: 360, p: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
+              <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
+                Student Detail
+              </Typography>
+              <IconButton size="small" onClick={() => setDetail(null)}>
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+              <Avatar
+                src={detail.avatar}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  bgcolor: "var(--color-background-success)",
+                  color: "var(--color-text-success)",
+                }}
+              >
+                {initials(detail.name)}
+              </Avatar>
+              <Box>
+                <Typography sx={{ fontSize: "15px", fontWeight: 500 }}>
+                  {detail.name}
+                </Typography>
+                <Box
+                  component="span"
+                  sx={{
+                    px: 0.75,
+                    py: 0.15,
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    bgcolor: "var(--color-background-info)",
+                    color: "var(--color-text-info)",
+                  }}
+                >
+                  Class {classLabel(detail)}
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <EmailOutlinedIcon
+                  sx={{ fontSize: 16, color: "var(--color-text-secondary)" }}
+                />
+                <Typography sx={{ fontSize: "13px" }}>
+                  {detail.email}
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <PhoneOutlinedIcon
+                  sx={{ fontSize: 16, color: "var(--color-text-secondary)" }}
+                />
+                <Typography sx={{ fontSize: "13px" }}>
+                  {detail.phone || "Not provided"}
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <BadgeOutlinedIcon
+                  sx={{ fontSize: 16, color: "var(--color-text-secondary)" }}
+                />
+                <Typography sx={{ fontSize: "13px" }}>
+                  Roll #{detail.rollNumber || "Not assigned"}
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <SchoolOutlinedIcon
+                  sx={{ fontSize: 16, color: "var(--color-text-secondary)" }}
+                />
+                <Typography sx={{ fontSize: "13px" }}>
+                  Class {classLabel(detail)}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 3, display: "flex", gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                onClick={() => {
+                  setDetail(null);
+                  openEdit(detail);
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                fullWidth
+                onClick={() => {
+                  setDetail(null);
+                  setDeactivateTarget(detail);
+                }}
+              >
+                Deactivate
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </Drawer>
+
+      {/* Bulk Upload Dialog */}
+      <Dialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            fontSize: "16px",
+            fontWeight: 500,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          Upload Students via Excel
+          <IconButton size="small" onClick={() => setUploadOpen(false)}>
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {uploading && <LinearProgress sx={{ mb: 2 }} />}
+
+          {!uploadResult && (
+            <>
+              <Typography
+                sx={{
+                  fontSize: "13px",
+                  color: "var(--color-text-secondary)",
+                  mb: 1,
+                }}
+              >
+                Upload an Excel file (.xlsx) with student details. Each row will
+                create a student account with a default password of{" "}
+                <strong>password123</strong>.
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2, fontSize: "12px" }}>
+                Maximum <strong>50 students</strong> per upload. Use the class
+                format <strong>grade-section</strong> (e.g. 10-A, 9-B).
+              </Alert>
+
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<DownloadOutlinedIcon />}
+                onClick={downloadSample}
+                sx={{ textTransform: "none", mb: 2 }}
+              >
+                Download Sample Excel
+              </Button>
+
+              <Box
+                sx={{
+                  border: "2px dashed var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-lg)",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  "&:hover": { bgcolor: "var(--color-background-secondary)" },
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  style={{ display: "none" }}
+                  onChange={handleFileSelect}
+                />
+                <UploadFileOutlinedIcon
+                  sx={{
+                    fontSize: 36,
+                    color: "var(--color-text-secondary)",
+                    mb: 1,
+                  }}
+                />
+                <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                  {uploadFile
+                    ? uploadFile.name
+                    : "Click to select an Excel file"}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "var(--color-text-secondary)",
+                    mt: 0.5,
+                  }}
+                >
+                  Supported formats: .xlsx, .xls
+                </Typography>
+              </Box>
+            </>
+          )}
+
+          {uploadResult && (
+            <Box>
+              {uploadResult.created?.length > 0 && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Successfully created {uploadResult.created.length} student
+                  account{uploadResult.created.length !== 1 ? "s" : ""}.
+                </Alert>
+              )}
+              {uploadResult.errors?.length > 0 && (
+                <Box>
+                  <Alert severity="warning" sx={{ mb: 1.5 }}>
+                    {uploadResult.errors.length} row
+                    {uploadResult.errors.length !== 1 ? "s" : ""} had errors:
+                  </Alert>
+                  <Box
+                    sx={{
+                      maxHeight: 200,
+                      overflow: "auto",
+                      bgcolor: "var(--color-background-secondary)",
+                      borderRadius: "var(--border-radius-md)",
+                      p: 1.5,
+                    }}
+                  >
+                    {uploadResult.errors.map((err, i) => (
+                      <Typography key={i} sx={{ fontSize: "12px", mb: 0.5 }}>
+                        {err.row > 0 ? `Row ${err.row}: ` : ""}
+                        {err.error}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setUploadOpen(false)}
+            sx={{ textTransform: "none", color: "text.primary" }}
+          >
+            {uploadResult ? "Close" : "Cancel"}
+          </Button>
+          {!uploadResult && (
+            <Button
+              variant="contained"
+              onClick={handleBulkUpload}
+              disabled={!uploadFile || uploading}
+              sx={{ textTransform: "none" }}
+            >
+              {uploading ? "Uploading…" : "Upload & Create"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>
