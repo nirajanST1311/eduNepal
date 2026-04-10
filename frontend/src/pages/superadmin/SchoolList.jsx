@@ -7,44 +7,19 @@ import {
   Button,
   MenuItem,
   Select,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Grid,
+  Skeleton,
 } from "@mui/material";
-import {
-  useGetSchoolsQuery,
-  useCreateSchoolMutation,
-} from "@/store/api/schoolApi";
+import { useGetSchoolsQuery } from "@/store/api/schoolApi";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All status" },
   { value: "active", label: "Active" },
-  { value: "monitor", label: "Monitor" },
-  { value: "at_risk", label: "At risk" },
   { value: "no_principal", label: "No principal" },
 ];
-const TYPE_OPTIONS = [{ value: "all", label: "All types" }];
 
-// Demo status logic for UI only
 function getStatus(school) {
-  if (school.name?.toLowerCase().includes("kopundol"))
-    return {
-      label: "At risk",
-      color: "var(--color-text-danger)",
-      bgcolor: "var(--color-background-danger)",
-    };
-  if (
-    school.name?.toLowerCase().includes("thaiba") ||
-    school.name?.toLowerCase().includes("sainbu")
-  )
-    return {
-      label: "Monitor",
-      color: "var(--color-text-warning)",
-      bgcolor: "var(--color-background-warning)",
-    };
-  if (school.name?.toLowerCase().includes("imadol"))
+  if (!school.principalId)
     return {
       label: "No principal",
       color: "var(--color-text-warning)",
@@ -59,15 +34,10 @@ function getStatus(school) {
 
 export default function SchoolList() {
   const navigate = useNavigate();
-  const { data: schools = [] } = useGetSchoolsQuery();
-  const [createSchool, { isLoading }] = useCreateSchoolMutation();
+  const { data: schools = [], isLoading } = useGetSchoolsQuery();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", address: "", phone: "" });
 
-  // Filter logic (demo)
   const filtered = schools.filter((s) => {
     const stat = getStatus(s);
     return (
@@ -76,12 +46,6 @@ export default function SchoolList() {
         stat.label.replace(/ /g, "_").toLowerCase() === status)
     );
   });
-
-  const handleCreate = async () => {
-    await createSchool(form).unwrap();
-    setOpen(false);
-    setForm({ name: "", address: "", phone: "" });
-  };
 
   return (
     <Box>
@@ -119,7 +83,7 @@ export default function SchoolList() {
       <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
         <TextField
           size="small"
-          placeholder="Search schools."
+          placeholder="Search schools..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ width: 220 }}
@@ -136,220 +100,165 @@ export default function SchoolList() {
             </MenuItem>
           ))}
         </Select>
-        <Select
-          size="small"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          sx={{ minWidth: 120 }}
-        >
-          {TYPE_OPTIONS.map((opt) => (
-            <MenuItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </MenuItem>
-          ))}
-        </Select>
       </Box>
 
-      <Grid container spacing={2}>
-        {filtered.map((s) => {
-          const stat = getStatus(s);
-          return (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={s._id}>
-              <Box
-                sx={{
-                  bgcolor: "var(--color-background-primary)",
-                  border: "0.5px solid var(--color-border-tertiary)",
-                  borderRadius: "var(--border-radius-lg)",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box sx={{ p: 2, pb: 1.5 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 1,
-                    }}
-                  >
-                    <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
-                      {s.name}
-                    </Typography>
+      {isLoading ? (
+        <Grid container spacing={2}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Skeleton
+                variant="rounded"
+                height={180}
+                sx={{ borderRadius: "var(--border-radius-lg)" }}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : filtered.length === 0 ? (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 8,
+            bgcolor: "var(--color-background-primary)",
+            borderRadius: "var(--border-radius-lg)",
+            border: "0.5px solid var(--color-border-tertiary)",
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: "15px",
+              fontWeight: 500,
+              mb: 0.5,
+            }}
+          >
+            {search || status !== "all"
+              ? "No schools match your filters"
+              : "No schools registered yet"}
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: "13px",
+              color: "var(--color-text-secondary)",
+              mb: 2,
+            }}
+          >
+            {search || status !== "all"
+              ? "Try adjusting your search or filters"
+              : "Add your first school to get started"}
+          </Typography>
+          {!search && status === "all" && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => navigate("/superadmin/schools/add")}
+            >
+              + Add school
+            </Button>
+          )}
+        </Box>
+      ) : (
+        <Grid container spacing={2}>
+          {filtered.map((s) => {
+            const stat = getStatus(s);
+            const location = [s.district, s.municipality]
+              .filter(Boolean)
+              .join(", ");
+            return (
+              <Grid key={s._id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <Box
+                  sx={{
+                    bgcolor: "var(--color-background-primary)",
+                    border: "0.5px solid var(--color-border-tertiary)",
+                    borderRadius: "var(--border-radius-lg)",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Box sx={{ p: 2, pb: 1.5 }}>
                     <Box
-                      component="span"
                       sx={{
-                        display: "inline-flex",
+                        display: "flex",
                         alignItems: "center",
-                        padding: "2px 8px",
-                        borderRadius: "4px",
-                        fontSize: "11px",
-                        fontWeight: 500,
-                        bgcolor: stat.bgcolor,
-                        color: stat.color,
+                        justifyContent: "space-between",
+                        mb: 1,
                       }}
                     >
-                      {stat.label}
-                    </Box>
-                  </Box>
-                  <Typography
-                    sx={{
-                      fontSize: "12px",
-                      color: "var(--color-text-secondary)",
-                      mb: 0.5,
-                      display: "block",
-                    }}
-                  >
-                    {s.address || "—"}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-                    <Box>
-                      <Typography
+                      <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
+                        {s.name}
+                      </Typography>
+                      <Box
+                        component="span"
                         sx={{
-                          fontSize: "12px",
-                          color: "var(--color-text-secondary)",
-                        }}
-                      >
-                        Teachers
-                      </Typography>
-                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
-                        —
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: "12px",
-                          color: "var(--color-text-secondary)",
-                        }}
-                      >
-                        Students
-                      </Typography>
-                      <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
-                        —
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: "12px",
-                          color: "var(--color-text-secondary)",
-                        }}
-                      >
-                        Attendance
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "13px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          fontSize: "11px",
                           fontWeight: 500,
-                          color:
-                            stat.label === "At risk"
-                              ? "var(--color-text-danger)"
-                              : stat.label === "Monitor"
-                                ? "var(--color-text-warning)"
-                                : "var(--color-text-success)",
+                          bgcolor: stat.bgcolor,
+                          color: stat.color,
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        —
-                      </Typography>
+                        {stat.label}
+                      </Box>
                     </Box>
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: "12px",
-                          color: "var(--color-text-secondary)",
-                        }}
-                      >
-                        Content
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "13px",
-                          fontWeight: 500,
-                          color:
-                            stat.label === "At risk"
-                              ? "var(--color-text-danger)"
-                              : stat.label === "Monitor"
-                                ? "var(--color-text-warning)"
-                                : "var(--color-text-success)",
-                        }}
-                      >
-                        —
-                      </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                        mb: 1,
+                      }}
+                    >
+                      {location || "—"}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 2, mb: 0.5 }}>
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: "12px",
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          Principal
+                        </Typography>
+                        <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                          {s.principalId?.name || "—"}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontSize: "12px",
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          Level
+                        </Typography>
+                        <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                          {s.schoolLevel ? s.schoolLevel.split(" ")[0] : "—"}
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-                <Box sx={{ display: "flex", gap: 1, px: 2, pb: 1.5 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    sx={{ flex: 1 }}
-                    onClick={() => navigate(`/superadmin/schools/${s._id}`)}
-                  >
-                    View
-                  </Button>
-                  {stat.label === "No principal" ? (
+                  <Box sx={{ display: "flex", gap: 1, px: 2, pb: 1.5 }}>
                     <Button
                       size="small"
-                      variant="contained"
-                      color="warning"
+                      variant="outlined"
                       sx={{ flex: 1 }}
+                      onClick={() => navigate(`/superadmin/schools/${s._id}`)}
                     >
-                      Assign principal
+                      View
                     </Button>
-                  ) : (
-                    <Button size="small" variant="outlined" sx={{ flex: 1 }}>
-                      Report
-                    </Button>
-                  )}
+                  </Box>
                 </Box>
-              </Box>
-            </Grid>
-          );
-        })}
-      </Grid>
-
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add school</DialogTitle>
-        <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
-        >
-          <TextField
-            label="School name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <TextField
-            label="Address"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
-          <TextField
-            label="Phone"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreate}
-            disabled={isLoading || !form.name}
-          >
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
     </Box>
   );
 }

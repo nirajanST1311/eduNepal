@@ -174,3 +174,45 @@ exports.getStats = async (req, res) => {
     totalAssignments: assignments.length,
   });
 };
+
+exports.getSuperadminStats = async (req, res) => {
+  const School = require("../models/School");
+
+  const [schools, totalStudents, totalTeachers, totalPrincipals] =
+    await Promise.all([
+      School.find().populate("principalId", "name email phone"),
+      User.countDocuments({ role: "STUDENT", active: true }),
+      User.countDocuments({ role: "TEACHER", active: true }),
+      User.countDocuments({ role: "SCHOOL_ADMIN", active: true }),
+    ]);
+
+  // Per-school summary
+  const schoolSummaries = await Promise.all(
+    schools.map(async (s) => {
+      const [students, teachers] = await Promise.all([
+        User.countDocuments({ schoolId: s._id, role: "STUDENT", active: true }),
+        User.countDocuments({ schoolId: s._id, role: "TEACHER", active: true }),
+      ]);
+      return {
+        _id: s._id,
+        name: s.name,
+        principal: s.principalId
+          ? { name: s.principalId.name, email: s.principalId.email }
+          : null,
+        students,
+        teachers,
+        active: s.active,
+        district: s.district,
+        municipality: s.municipality,
+      };
+    }),
+  );
+
+  res.json({
+    totalSchools: schools.length,
+    totalStudents,
+    totalTeachers,
+    totalPrincipals,
+    schools: schoolSummaries,
+  });
+};
