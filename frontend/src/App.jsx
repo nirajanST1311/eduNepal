@@ -14,6 +14,7 @@ import AddChapter from "@/pages/teacher/AddChapter";
 import EditChapter from "@/pages/teacher/EditChapter";
 import ChapterDetail from "@/pages/teacher/ChapterDetail";
 import TeacherAssignments from "@/pages/teacher/TeacherAssignments";
+import AssignmentDetail from "@/pages/teacher/AssignmentDetail";
 import CreateAssignment from "@/pages/teacher/CreateAssignment";
 import EditAssignment from "@/pages/teacher/EditAssignment";
 import GradeAssignment from "@/pages/teacher/GradeAssignment";
@@ -102,6 +103,10 @@ function App() {
           <Route
             path="/teacher/assignments/create"
             element={<CreateAssignment />}
+          />
+          <Route
+            path="/teacher/assignments/:assignmentId"
+            element={<AssignmentDetail />}
           />
           <Route
             path="/teacher/assignments/:assignmentId/edit"
