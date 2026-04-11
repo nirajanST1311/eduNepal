@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -36,6 +36,8 @@ const typeIcon = {
 export default function ChapterDetail() {
   const { chapterId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.state?.from || "/teacher/content";
   const { user } = useSelector((s) => s.auth);
   const { data: chapter, isLoading } = useGetChapterQuery(chapterId, {
     skip: !chapterId,
@@ -88,7 +90,7 @@ export default function ChapterDetail() {
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
         <Typography color="text.secondary">Chapter not found.</Typography>
-        <Button onClick={() => navigate(-1)} sx={{ mt: 2 }}>
+        <Button onClick={() => navigate(backPath)} sx={{ mt: 2 }}>
           Go back
         </Button>
       </Box>
@@ -147,7 +149,7 @@ export default function ChapterDetail() {
       >
         <Button
           startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(backPath)}
           size="small"
           sx={{ textTransform: "none", color: "var(--color-text-secondary)" }}
         >

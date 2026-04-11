@@ -33,11 +33,12 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import TopicOutlinedIcon from "@mui/icons-material/TopicOutlined";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import { useSelector } from "react-redux";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import {
@@ -107,6 +108,7 @@ export default function TeacherContent() {
   const [expanded, setExpanded] = useState({});
   const [chActionTarget, setChActionTarget] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Filters live in URL params so back-nav restores them
   const classId = searchParams.get("classId") || "";
@@ -252,7 +254,7 @@ export default function TeacherContent() {
     const p = {};
     if (cid) p.classId = cid;
     if (sub._id) p.subjectId = sub._id;
-    setSearchParams(p, { replace: true });
+    setSearchParams(p);
     setSearch("");
     setExpanded({});
   };
@@ -296,17 +298,29 @@ export default function TeacherContent() {
           mb: 3,
         }}
       >
-        <Box>
-          <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
-            {isOverview ? "My Content" : "Content"}
-          </Typography>
-          <Typography
-            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
-          >
-            {isOverview
-              ? "Overview of all your teaching content"
-              : `Class ${selectedClass?.grade || ""}${selectedClass?.section || ""} · ${selectedSubject?.name || ""}`}
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+          {!isOverview && (
+            <Button
+              size="small"
+              startIcon={<ArrowBackIosNewIcon sx={{ fontSize: 11 }} />}
+              onClick={handleBackToOverview}
+              sx={{ textTransform: "none", fontSize: "13px", color: "var(--color-text-secondary)", mt: 0.25, minWidth: 0, px: 1 }}
+            >
+              Back
+            </Button>
+          )}
+          <Box>
+            <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
+              {isOverview ? "My Content" : selectedSubject?.name || "Content"}
+            </Typography>
+            <Typography
+              sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
+            >
+              {isOverview
+                ? "Overview of all your teaching content"
+                : `Class ${selectedClass?.grade || ""}${selectedClass?.section || ""}`}
+            </Typography>
+          </Box>
         </Box>
         <Box sx={{ display: "flex", gap: 1 }}>
           {subjectId && (
@@ -771,7 +785,7 @@ export default function TeacherContent() {
                       textTransform: "none",
                       color: "var(--color-text-secondary)",
                     }}
-                    onClick={() => navigate(`/teacher/content/${ch._id}`)}
+                    onClick={() => navigate(`/teacher/content/${ch._id}`, { state: { from: location.pathname + location.search } })}
                   >
                     View
                   </Button>
@@ -784,7 +798,7 @@ export default function TeacherContent() {
                       flexShrink: 0,
                       textTransform: "none",
                     }}
-                    onClick={() => navigate(`/teacher/content/${ch._id}/edit`)}
+                    onClick={() => navigate(`/teacher/content/${ch._id}/edit`, { state: { from: location.pathname + location.search } })}
                   >
                     {ch.status !== "not_started" ? "Edit" : "Start"}
                   </Button>

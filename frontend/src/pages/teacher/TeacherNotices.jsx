@@ -371,7 +371,7 @@ export default function TeacherNotices() {
         {/* Search */}
         <TextField placeholder="Search notices…" value={search}
           onChange={(e) => handleSearchChange(e.target.value)} size="small" sx={{ width: 195 }}
-          InputProps={{
+          slotProps={{ input: {
             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 15, color: "var(--color-text-secondary)" }} /></InputAdornment>,
             endAdornment: search ? (
               <InputAdornment position="end">
@@ -380,7 +380,7 @@ export default function TeacherNotices() {
                 </IconButton>
               </InputAdornment>
             ) : null,
-          }}
+          } }}
         />
 
         {/* Class filter — My Class tab, only when teacher has multiple classes */}
@@ -512,7 +512,7 @@ export default function TeacherNotices() {
 
       {/* ── Create / Edit dialog ── */}
       <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { borderRadius: "var(--border-radius-lg)" } }}>
+        slotProps={{ paper: { sx: { borderRadius: "var(--border-radius-lg)" } } }}>
         <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>
           {editTarget ? "Edit Notice" : "New Class Notice"}
           {!editTarget && (
