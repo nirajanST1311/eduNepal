@@ -1,39 +1,84 @@
-:root {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Light theme (default) ── */
+:root, [data-theme="light"] {
+  --color-brand: #2563eb;
+  --color-primary: #2563eb;
+
   /* Backgrounds */
   --color-background-primary: #ffffff;
-  --color-background-secondary: #f8f9fa;
-  --color-background-tertiary: #f3f4f6;
-  --color-background-info: #eff6ff;
-  --color-background-success: #f0fdf4;
-  --color-background-warning: #fffbeb;
-  --color-background-danger: #fef2f2;
+  --color-background-secondary: #f8fafc;
+  --color-background-tertiary: #f1f5f9;
+
+  /* Semantic backgrounds */
+  --color-background-info: rgba(37, 99, 235, 0.08);
+  --color-background-success: rgba(22, 163, 74, 0.08);
+  --color-background-warning: rgba(217, 119, 6, 0.08);
+  --color-background-danger: rgba(220, 38, 38, 0.08);
 
   /* Text */
-  --color-text-primary: #1e293b;
+  --color-text-primary: #0f172a;
   --color-text-secondary: #64748b;
   --color-text-tertiary: #94a3b8;
+
+  /* Semantic text */
   --color-text-info: #2563eb;
   --color-text-success: #16a34a;
   --color-text-warning: #d97706;
   --color-text-danger: #dc2626;
 
   /* Borders */
-  --color-border-tertiary: rgba(0, 0, 0, 0.15);
-  --color-border-secondary: rgba(0, 0, 0, 0.3);
-  --color-border-primary: rgba(0, 0, 0, 0.4);
-  --color-border-info: #bfdbfe;
-  --color-border-success: #bbf7d0;
-  --color-border-warning: #fde68a;
-  --color-border-danger: #fecaca;
+  --color-border-secondary: rgba(0, 0, 0, 0.08);
+  --color-border-tertiary: rgba(0, 0, 0, 0.08);
+  --color-border-info: rgba(37, 99, 235, 0.2);
+  --color-border-success: rgba(22, 163, 74, 0.2);
+  --color-border-warning: rgba(217, 119, 6, 0.2);
+  --color-border-danger: rgba(220, 38, 38, 0.2);
 
-  /* Typography */
-  --font-sans: "Inter", "Roboto", "Helvetica", "Arial", sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
-
-  /* Border radius */
+  /* Radii */
+  --border-radius-sm: 6px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
+
+  /* Font */
+  --font-mono: "SF Mono", "Fira Code", "Fira Mono", monospace;
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  --color-brand: #60a5fa;
+  --color-primary: #60a5fa;
+
+  --color-background-primary: #0f172a;
+  --color-background-secondary: #1e293b;
+  --color-background-tertiary: #334155;
+
+  --color-background-info: rgba(96, 165, 250, 0.12);
+  --color-background-success: rgba(74, 222, 128, 0.12);
+  --color-background-warning: rgba(251, 191, 36, 0.12);
+  --color-background-danger: rgba(248, 113, 113, 0.12);
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+
+  --color-text-info: #60a5fa;
+  --color-text-success: #4ade80;
+  --color-text-warning: #fbbf24;
+  --color-text-danger: #f87171;
+
+  --color-border-secondary: rgba(255, 255, 255, 0.08);
+  --color-border-tertiary: rgba(255, 255, 255, 0.08);
+  --color-border-info: rgba(96, 165, 250, 0.25);
+  --color-border-success: rgba(74, 222, 128, 0.25);
+  --color-border-warning: rgba(251, 191, 36, 0.25);
+  --color-border-danger: rgba(248, 113, 113, 0.25);
+
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  --font-mono: "SF Mono", "Fira Code", "Fira Mono", monospace;
 }
 
 *,
@@ -46,11 +91,21 @@
 
 body {
   margin: 0;
-  font-family: var(--font-sans);
-  color: var(--color-text-primary);
-  background: var(--color-background-tertiary);
-  line-height: 1.7;
+  font-family: "Inter", "Roboto", "Helvetica", "Arial", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible outlines */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 

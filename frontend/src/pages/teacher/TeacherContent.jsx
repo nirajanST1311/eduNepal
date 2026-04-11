@@ -11,9 +11,16 @@ import {
   Skeleton,
   Collapse,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
 import ExpandLessOutlinedIcon from "@mui/icons-material/ExpandLessOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
@@ -25,11 +32,18 @@ import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import TopicOutlinedIcon from "@mui/icons-material/TopicOutlined";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
 import { useGetClassesQuery } from "@/store/api/classApi";
-import { useGetChaptersQuery } from "@/store/api/chapterApi";
+import {
+  useGetChaptersQuery,
+  useUpdateChapterMutation,
+  useDeleteChapterMutation,
+} from "@/store/api/chapterApi";
 
 /* ─── config ─── */
 const typeIcon = {
@@ -67,6 +81,11 @@ const statusConfig = {
     color: "var(--color-text-secondary)",
     bg: "var(--color-background-secondary)",
   },
+  inactive: {
+    label: "Inactive",
+    color: "#c62828",
+    bg: "#ffebee",
+  },
 };
 
 function timeAgo(date) {
@@ -82,11 +101,40 @@ function timeAgo(date) {
 
 export default function TeacherContent() {
   const { user } = useSelector((s) => s.auth);
-  const [classId, setClassId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState({});
+  const [chActionTarget, setChActionTarget] = useState(null);
   const navigate = useNavigate();
+
+  // Filters live in URL params so back-nav restores them
+  const classId = searchParams.get("classId") || "";
+  const subjectId = searchParams.get("subjectId") || "";
+  const statusFilter = searchParams.get("status") || "all";
+
+  const setClassId = (v) => {
+    const p = {};
+    if (v) p.classId = v;
+    setSearchParams(p);
+    setSearch("");
+    setExpanded({});
+  };
+  const setSubjectId = (v) => {
+    const p = {};
+    if (classId) p.classId = classId;
+    if (v) p.subjectId = v;
+    setSearchParams(p);
+    setSearch("");
+    setExpanded({});
+  };
+  const setStatusFilter = (v) => {
+    const p = {};
+    if (classId) p.classId = classId;
+    if (subjectId) p.subjectId = subjectId;
+    if (v && v !== "all") p.status = v;
+    setSearchParams(p);
+  };
+  const clearAll = () => { setSearchParams({}); setSearch(""); setExpanded({}); };
 
   const isOverview = !subjectId;
 
@@ -176,11 +224,14 @@ export default function TeacherContent() {
   const selectedSubject = subjects.find((s) => s._id === subjectId);
 
   const filtered = useMemo(() => {
-    if (!chapters) return [];
-    if (!search.trim()) return chapters;
-    const q = search.toLowerCase();
-    return chapters.filter((ch) => ch.title.toLowerCase().includes(q));
-  }, [chapters, search]);
+    let list = chapters || [];
+    if (statusFilter !== "all") list = list.filter((ch) => ch.status === statusFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((ch) => ch.title.toLowerCase().includes(q));
+    }
+    return list;
+  }, [chapters, search, statusFilter]);
 
   const pubCount = (chapters || []).filter(
     (c) => c.status === "published",
@@ -197,15 +248,16 @@ export default function TeacherContent() {
 
   const handleSubjectCardClick = (sub) => {
     const cid = sub.classId?._id || sub.classId;
-    setClassId(cid);
-    setSubjectId(sub._id);
+    const p = {};
+    if (cid) p.classId = cid;
+    if (sub._id) p.subjectId = sub._id;
+    setSearchParams(p);
     setSearch("");
     setExpanded({});
   };
 
   const handleBackToOverview = () => {
-    setClassId("");
-    setSubjectId("");
+    setSearchParams({});
     setSearch("");
     setExpanded({});
   };
@@ -213,6 +265,24 @@ export default function TeacherContent() {
   const isLoading = isOverview
     ? loadingTeacherSubs || loadingOverview || loadingClasses
     : loadingChapters;
+
+  const [updateChapter, { isLoading: actionLoading }] = useUpdateChapterMutation();
+  const [deleteChapter] = useDeleteChapterMutation();
+
+  const handleChapterAction = async () => {
+    if (!chActionTarget) return;
+    const { id, action } = chActionTarget;
+    try {
+      if (action === "delete") {
+        await deleteChapter(id).unwrap();
+      } else if (action === "deactivate") {
+        await updateChapter({ id, status: "inactive" }).unwrap();
+      } else if (action === "activate") {
+        await updateChapter({ id, status: "published" }).unwrap();
+      }
+    } catch { /* handled */ }
+    setChActionTarget(null);
+  };
 
   return (
     <Box>
@@ -267,56 +337,117 @@ export default function TeacherContent() {
       <Box
         sx={{
           display: "flex",
-          gap: 2,
+          gap: 1.5,
           mb: 3,
           alignItems: "center",
           flexWrap: "wrap",
         }}
       >
-        <FormControl sx={{ minWidth: 180 }}>
-          <Select
-            value={classId}
-            displayEmpty
-            size="small"
-            onChange={(e) => {
-              setClassId(e.target.value);
-              setSubjectId("");
-              setSearch("");
-            }}
-            sx={{ bgcolor: "var(--color-background-primary)" }}
-          >
-            <MenuItem value="" disabled>
-              Select class
-            </MenuItem>
-            {classes.map((c) => (
-              <MenuItem key={c._id} value={c._id}>
-                Class {c.grade} {c.section || ""}
+        {/* Class select with X */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
+          <FormControl sx={{ minWidth: 160 }}>
+            <Select
+              value={classId}
+              displayEmpty
+              size="small"
+              onChange={(e) => setClassId(e.target.value)}
+              sx={{ bgcolor: "var(--color-background-primary)", borderRadius: classId ? "var(--border-radius-md) 0 0 var(--border-radius-md)" : undefined }}
+            >
+              <MenuItem value="" disabled>
+                Select class
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl sx={{ minWidth: 180 }}>
-          <Select
-            value={subjectId}
-            displayEmpty
-            size="small"
-            onChange={(e) => {
-              setSubjectId(e.target.value);
-              setSearch("");
-            }}
-            disabled={!classId}
-            sx={{ bgcolor: "var(--color-background-primary)" }}
-          >
-            <MenuItem value="" disabled>
-              Select subject
-            </MenuItem>
-            {subjects.map((s) => (
-              <MenuItem key={s._id} value={s._id}>
-                {s.name}
+              {classes.map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  Class {c.grade} {c.section || ""}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {classId && (
+            <IconButton
+              size="small"
+              onClick={() => { setSearchParams({}); setSearch(""); setExpanded({}); }}
+              sx={{
+                height: 40, width: 30, borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                border: "1px solid", borderColor: "divider", borderLeft: "none",
+                bgcolor: "var(--color-background-primary)", "&:hover": { bgcolor: "var(--color-background-secondary)" },
+              }}
+            >
+              <CloseOutlinedIcon sx={{ fontSize: 13 }} />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Subject select with X */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <FormControl sx={{ minWidth: 160 }}>
+            <Select
+              value={subjectId}
+              displayEmpty
+              size="small"
+              onChange={(e) => setSubjectId(e.target.value)}
+              disabled={!classId}
+              sx={{ bgcolor: "var(--color-background-primary)", borderRadius: subjectId ? "var(--border-radius-md) 0 0 var(--border-radius-md)" : undefined }}
+            >
+              <MenuItem value="" disabled>
+                Select subject
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              {subjects.map((s) => (
+                <MenuItem key={s._id} value={s._id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {subjectId && (
+            <IconButton
+              size="small"
+              onClick={() => { const p = {}; if (classId) p.classId = classId; setSearchParams(p); setSearch(""); setExpanded({}); }}
+              sx={{
+                height: 40, width: 30, borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                border: "1px solid", borderColor: "divider", borderLeft: "none",
+                bgcolor: "var(--color-background-primary)", "&:hover": { bgcolor: "var(--color-background-secondary)" },
+              }}
+            >
+              <CloseOutlinedIcon sx={{ fontSize: 13 }} />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Status filter with X — only when viewing a subject */}
+        {subjectId && (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <FormControl sx={{ minWidth: 130 }}>
+              <Select
+                value={statusFilter}
+                displayEmpty
+                size="small"
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{ bgcolor: "var(--color-background-primary)", borderRadius: statusFilter !== "all" ? "var(--border-radius-md) 0 0 var(--border-radius-md)" : undefined }}
+              >
+                <MenuItem value="all">All statuses</MenuItem>
+                <MenuItem value="published">Published</MenuItem>
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+            {statusFilter !== "all" && (
+              <IconButton
+                size="small"
+                onClick={() => setStatusFilter("all")}
+                sx={{
+                  height: 40, width: 30, borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                  border: "1px solid", borderColor: "divider", borderLeft: "none",
+                  bgcolor: "var(--color-background-primary)", "&:hover": { bgcolor: "var(--color-background-secondary)" },
+                }}
+              >
+                <CloseOutlinedIcon sx={{ fontSize: 13 }} />
+              </IconButton>
+            )}
+          </Box>
+        )}
+
+        {/* Search — only when subject is selected */}
         {subjectId && (
           <Box
             sx={{
@@ -329,7 +460,7 @@ export default function TeacherContent() {
               px: 1.5,
               height: 40,
               ml: "auto",
-              minWidth: 200,
+              minWidth: 260,
             }}
           >
             <SearchOutlinedIcon
@@ -341,7 +472,23 @@ export default function TeacherContent() {
               onChange={(e) => setSearch(e.target.value)}
               sx={{ fontSize: "13px", flex: 1 }}
             />
+            {search && (
+              <IconButton size="small" onClick={() => setSearch("")} sx={{ p: 0 }}>
+                <CloseOutlinedIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            )}
           </Box>
+        )}
+        {/* Clear all filters */}
+        {(classId || subjectId || statusFilter !== "all" || search) && (
+          <Button
+            size="small"
+            startIcon={<CloseOutlinedIcon sx={{ fontSize: 12 }} />}
+            onClick={clearAll}
+            sx={{ textTransform: "none", fontSize: "12px", color: "var(--color-text-secondary)" }}
+          >
+            Clear all
+          </Button>
         )}
       </Box>
 
@@ -622,6 +769,21 @@ export default function TeacherContent() {
                     </IconButton>
                   )}
                   <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 14 }} />}
+                    sx={{
+                      minWidth: 55,
+                      fontSize: "12px",
+                      flexShrink: 0,
+                      textTransform: "none",
+                      color: "var(--color-text-secondary)",
+                    }}
+                    onClick={() => navigate(`/teacher/content/${ch._id}`)}
+                  >
+                    View
+                  </Button>
+                  <Button
                     variant="outlined"
                     size="small"
                     sx={{
@@ -634,6 +796,26 @@ export default function TeacherContent() {
                   >
                     {ch.status !== "not_started" ? "Edit" : "Start"}
                   </Button>
+                  <Tooltip title={ch.status === "inactive" ? "Activate chapter" : "Deactivate chapter"}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setChActionTarget({ id: ch._id, title: ch.title, action: ch.status === "inactive" ? "activate" : "deactivate" })}
+                      sx={{ color: ch.status === "inactive" ? "success.main" : "text.secondary" }}
+                    >
+                      {ch.status === "inactive"
+                        ? <CheckCircleOutlinedIcon sx={{ fontSize: 16 }} />
+                        : <BlockOutlinedIcon sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete chapter">
+                    <IconButton
+                      size="small"
+                      onClick={() => setChActionTarget({ id: ch._id, title: ch.title, action: "delete" })}
+                      sx={{ color: "error.main" }}
+                    >
+                      <DeleteOutlinedIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
                 {/* Expandable topics detail */}
                 {topicsList.length > 0 && (
@@ -1002,6 +1184,34 @@ export default function TeacherContent() {
           </Box>
         </>
       )}
+
+      {/* Chapter action confirm dialog */}
+      <Dialog open={!!chActionTarget} onClose={() => setChActionTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>
+          {chActionTarget?.action === "delete" ? "Delete chapter?" : chActionTarget?.action === "deactivate" ? "Deactivate chapter?" : "Activate chapter?"}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}>
+            {chActionTarget?.action === "delete"
+              ? `"${chActionTarget?.title}" and all its topics will be permanently removed.`
+              : chActionTarget?.action === "deactivate"
+              ? `Students will no longer see "${chActionTarget?.title}".`
+              : `"${chActionTarget?.title}" will become visible to students again.`}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChActionTarget(null)} sx={{ textTransform: "none" }}>Cancel</Button>
+          <Button
+            variant="contained"
+            color={chActionTarget?.action === "delete" ? "error" : chActionTarget?.action === "deactivate" ? "warning" : "success"}
+            disabled={actionLoading}
+            onClick={handleChapterAction}
+            sx={{ textTransform: "none" }}
+          >
+            {actionLoading ? <CircularProgress size={16} /> : chActionTarget?.action === "delete" ? "Delete" : chActionTarget?.action === "deactivate" ? "Deactivate" : "Activate"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

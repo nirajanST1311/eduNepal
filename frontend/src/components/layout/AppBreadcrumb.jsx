@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect } from "react";
 import { Typography, Breadcrumbs } from "@mui/material";
 import { useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 // Context for dynamic breadcrumb label overrides (set at layout level)
@@ -25,40 +26,24 @@ export function useBreadcrumbOverride(id, label) {
   }, [id, label, setOverrides]);
 }
 
-const labelMap = {
-  superadmin: "Super Admin",
-  admin: "Admin",
-  teacher: "Teacher",
-  student: "Student",
-  dashboard: "Dashboard",
-  analytics: "Analytics",
-  schools: "Schools",
-  principals: "Principals",
-  notices: "Notices",
-  settings: "Settings",
-  content: "Content",
-  assignments: "Assignments",
-  attendance: "Attendance",
-  students: "Students",
-  subjects: "My Subjects",
-  profile: "Profile",
-  "change-password": "Change Password",
-  teachers: "Teachers",
-  classes: "Classes",
-  add: "Add",
-  create: "Create",
-  grade: "Grade",
-  edit: "Edit",
-};
-
 const isObjectId = (s) => /^[a-f\d]{24}$/i.test(s);
 
 export default function AppBreadcrumb() {
   const { pathname } = useLocation();
   const { overrides } = useContext(BreadcrumbContext);
+  const { t } = useTranslation();
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length <= 1) return null;
+
+  const getLabel = (seg) => {
+    if (overrides[seg]) return overrides[seg];
+    const key = `breadcrumb.${seg}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
+    if (isObjectId(seg)) return "…";
+    return seg.charAt(0).toUpperCase() + seg.slice(1);
+  };
 
   return (
     <Breadcrumbs
@@ -67,10 +52,7 @@ export default function AppBreadcrumb() {
     >
       {segments.map((seg, i) => {
         const path = "/" + segments.slice(0, i + 1).join("/");
-        const label =
-          overrides[seg] ||
-          labelMap[seg] ||
-          (isObjectId(seg) ? "…" : seg.charAt(0).toUpperCase() + seg.slice(1));
+        const label = getLabel(seg);
         const isLast = i === segments.length - 1;
 
         if (isLast) {

@@ -15,12 +15,17 @@ import {
   Card,
   CardContent,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import CloseIcon from "@mui/icons-material/Close";
 import { useSelector } from "react-redux";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
 import { useCreateAssignmentMutation } from "@/store/api/assignmentApi";
+import { useUploadFileMutation } from "@/store/api/uploadApi";
 
 export default function CreateAssignment() {
   const { user } = useSelector((s) => s.auth);
@@ -55,6 +60,23 @@ export default function CreateAssignment() {
     [allSubjects, user?.subjectIds],
   );
   const [createAssignment, { isLoading }] = useCreateAssignmentMutation();
+  const [uploadFile] = useUploadFileMutation();
+  const [attachment, setAttachment] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  const handleAttachmentUpload = async (file) => {
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadFile(formData).unwrap();
+      setAttachment({ url: result.url, name: file.name });
+    } catch {
+      // upload failed
+    }
+    setUploadingFile(false);
+  };
 
   const set = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
@@ -78,7 +100,11 @@ export default function CreateAssignment() {
       return;
     }
     try {
-      await createAssignment({ ...form, status }).unwrap();
+      await createAssignment({
+        ...form,
+        status,
+        ...(attachment?.url && { fileUrl: attachment.url }),
+      }).unwrap();
       navigate("/teacher/assignments");
     } catch {
       /* handled by RTK */
@@ -137,6 +163,86 @@ export default function CreateAssignment() {
                 onChange={set("description")}
                 placeholder="Describe the assignment, include instructions…"
               />
+
+              {/* Attachment Upload */}
+              <Box>
+                <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 1 }}>
+                  Attachment (optional)
+                </Typography>
+                {attachment ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1.5,
+                      border: "1px solid var(--color-border-tertiary)",
+                      borderRadius: "var(--border-radius-md)",
+                      bgcolor: "var(--color-background-secondary)",
+                    }}
+                  >
+                    <InsertDriveFileOutlinedIcon
+                      sx={{ color: "primary.main", fontSize: 20 }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: "13px",
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {attachment.name}
+                    </Typography>
+                    <Button
+                      size="small"
+                      href={attachment.url}
+                      target="_blank"
+                      sx={{ textTransform: "none", fontSize: "12px", minWidth: 0 }}
+                    >
+                      View
+                    </Button>
+                    <Box
+                      component="span"
+                      onClick={() => setAttachment(null)}
+                      sx={{
+                        cursor: "pointer",
+                        display: "flex",
+                        color: "text.secondary",
+                        "&:hover": { color: "error.main" },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                  </Box>
+                ) : (
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    startIcon={
+                      uploadingFile ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <CloudUploadOutlinedIcon />
+                      )
+                    }
+                    disabled={uploadingFile}
+                    sx={{ textTransform: "none", fontSize: "13px" }}
+                  >
+                    {uploadingFile ? "Uploading…" : "Upload file"}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.mp3"
+                      onChange={(e) => {
+                        if (e.target.files[0]) handleAttachmentUpload(e.target.files[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+                )}
+              </Box>
             </CardContent>
           </Card>
         </Grid>

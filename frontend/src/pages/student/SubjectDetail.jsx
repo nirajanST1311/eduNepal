@@ -73,7 +73,7 @@ export default function SubjectDetail() {
       {/* Back + header */}
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={() => navigate("/student/subjects")}
+        onClick={() => navigate(-1)}
         sx={{
           mb: 2,
           fontSize: "13px",

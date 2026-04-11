@@ -1,84 +1,99 @@
 import { useState } from "react";
-import { Box, Typography, TextField, Button, Alert } from "@mui/material";
+import { Box, Typography, Button, Alert } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useChangePasswordMutation } from "@/store/api/authApi";
+import FormWrapper from "@/components/common/FormWrapper";
+import { ControlledPasswordField } from "@/components/common/FormFields";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 export default function ChangePassword() {
   const [changePassword, { isLoading }] = useChangePasswordMutation();
-  const [form, setForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
   const [msg, setMsg] = useState(null);
+  const { t } = useTranslation();
 
-  const set = (f) => (e) => setForm({ ...form, [f]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data, methods) => {
     setMsg(null);
-    if (form.newPassword !== form.confirmPassword) {
-      setMsg({ type: "error", text: "Passwords do not match." });
+    if (data.newPassword !== data.confirmPassword) {
+      setMsg({ type: "error", text: t("profile.passwordMismatch") });
       return;
     }
     try {
       await changePassword({
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
       }).unwrap();
-      setMsg({ type: "success", text: "Password changed." });
-      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setMsg({ type: "success", text: t("profile.passwordChanged") });
+      methods.reset();
     } catch (err) {
       setMsg({
         type: "error",
-        text: err?.data?.message || "Failed to change password.",
+        text: err?.data?.message || t("profile.passwordFailed"),
       });
     }
   };
 
   return (
     <Box>
-      <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 3 }}>
-        Change password
+      <Typography variant="h1" sx={{ mb: 3 }}>
+        {t("profile.changePassword")}
       </Typography>
       <Box
-        component="form"
-        onSubmit={handleSubmit}
         sx={{
-          bgcolor: "var(--color-background-primary)",
-          border: "0.5px solid var(--color-border-tertiary)",
-          borderRadius: "var(--border-radius-lg)",
-          p: 3,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          maxWidth: 400,
+          bgcolor: "background.paper",
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 3,
+          overflow: "hidden",
+          maxWidth: 480,
         }}
       >
-        {msg && <Alert severity={msg.type}>{msg.text}</Alert>}
-        <TextField
-          label="Current password"
-          type="password"
-          value={form.currentPassword}
-          onChange={set("currentPassword")}
-          required
-        />
-        <TextField
-          label="New password"
-          type="password"
-          value={form.newPassword}
-          onChange={set("newPassword")}
-          required
-        />
-        <TextField
-          label="Confirm new password"
-          type="password"
-          value={form.confirmPassword}
-          onChange={set("confirmPassword")}
-          required
-        />
-        <Button type="submit" variant="contained" disabled={isLoading}>
-          Change password
-        </Button>
+        {/* Header strip */}
+        <Box sx={{ px: 3, py: 2, display: "flex", alignItems: "center", gap: 1.5, borderBottom: "1px solid var(--color-border-tertiary)" }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: "var(--color-background-warning)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LockOutlinedIcon sx={{ fontSize: 18, color: "var(--color-text-warning)" }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>Update Password</Typography>
+            <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Enter your current password and choose a new one</Typography>
+          </Box>
+        </Box>
+
+        <FormWrapper
+          defaultValues={{ currentPassword: "", newPassword: "", confirmPassword: "" }}
+          onSubmit={handleSubmit}
+          sx={{
+            p: 3,
+            display: "flex",
+            flexDirection: "column",
+            gap: 0.5,
+          }}
+        >
+          {msg && (
+            <Alert severity={msg.type} sx={{ mb: 1 }}>
+              {msg.text}
+            </Alert>
+          )}
+          <ControlledPasswordField
+            name="currentPassword"
+            label={t("profile.currentPassword")}
+            rules={{ required: t("common.required") }}
+          />
+          <ControlledPasswordField
+            name="newPassword"
+            label={t("profile.newPassword")}
+            rules={{
+              required: t("common.required"),
+              minLength: { value: 6, message: t("common.minLength", { min: 6 }) },
+            }}
+          />
+          <ControlledPasswordField
+            name="confirmPassword"
+            label={t("profile.confirmPassword")}
+            rules={{ required: t("common.required") }}
+          />
+          <Button type="submit" variant="contained" disabled={isLoading} sx={{ mt: 1 }}>
+            {t("profile.changeBtn")}
+          </Button>
+        </FormWrapper>
       </Box>
     </Box>
   );

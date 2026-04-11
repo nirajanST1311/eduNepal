@@ -151,8 +151,30 @@ function PdfContent({ fileUrl }) {
       </Typography>
     );
   }
+  const correctedUrl = fileUrl.replace(/\/image\/upload\/(.*\.pdf)/i, "/raw/upload/$1");
   return (
     <Box>
+      <Box sx={{ display: "flex", gap: 1, mb: 1.5 }}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => window.open(correctedUrl, "_blank", "noopener,noreferrer")}
+          sx={{ textTransform: "none", fontSize: "13px" }}
+        >
+          Open PDF
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          component="a"
+          href={correctedUrl}
+          download
+          rel="noopener noreferrer"
+          sx={{ textTransform: "none", fontSize: "13px" }}
+        >
+          Download
+        </Button>
+      </Box>
       <Box
         sx={{
           borderRadius: "var(--border-radius-lg)",
@@ -162,21 +184,11 @@ function PdfContent({ fileUrl }) {
         }}
       >
         <iframe
-          src={fileUrl}
-          title="PDF viewer"
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(correctedUrl)}&embedded=true`}
+          title="PDF Viewer"
           style={{ width: "100%", height: "100%", border: 0 }}
         />
       </Box>
-      <Button
-        variant="outlined"
-        size="small"
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        sx={{ mt: 1.5, textTransform: "none", fontSize: "13px" }}
-      >
-        Open in new tab
-      </Button>
     </Box>
   );
 }

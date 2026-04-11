@@ -7,9 +7,15 @@ import {
   ListItemText,
   Typography,
   Badge,
+  IconButton,
+  alpha,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 import DashboardIcon from "@mui/icons-material/DashboardOutlined";
 import MenuBookIcon from "@mui/icons-material/MenuBookOutlined";
 import AssignmentIcon from "@mui/icons-material/AssignmentOutlined";
@@ -22,81 +28,56 @@ import SubjectIcon from "@mui/icons-material/AutoStoriesOutlined";
 import HomeIcon from "@mui/icons-material/HomeOutlined";
 import SettingsIcon from "@mui/icons-material/SettingsOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
+import CloseIcon from "@mui/icons-material/CloseOutlined";
 
-const WIDTH = 180;
+const MotionListItemButton = motion.create(ListItemButton);
+
+const WIDTH = 220;
 
 const navByRole = {
   TEACHER: [
-    { label: "Dashboard", icon: <DashboardIcon />, path: "/teacher" },
-    { label: "Content", icon: <MenuBookIcon />, path: "/teacher/content" },
-    {
-      label: "Assignments",
-      icon: <AssignmentIcon />,
-      path: "/teacher/assignments",
-    },
-    {
-      label: "Attendance",
-      icon: <EventAvailableIcon />,
-      path: "/teacher/attendance",
-    },
-    { label: "Students", icon: <PeopleIcon />, path: "/teacher/students" },
-    { label: "Notices", icon: <CampaignIcon />, path: "/teacher/notices" },
+    { labelKey: "nav.dashboard", icon: <DashboardIcon />, path: "/teacher" },
+    { labelKey: "nav.content", icon: <MenuBookIcon />, path: "/teacher/content" },
+    { labelKey: "nav.assignments", icon: <AssignmentIcon />, path: "/teacher/assignments" },
+    { labelKey: "nav.attendance", icon: <EventAvailableIcon />, path: "/teacher/attendance" },
+    { labelKey: "nav.students", icon: <PeopleIcon />, path: "/teacher/students" },
+    { labelKey: "nav.notices", icon: <CampaignIcon />, path: "/teacher/notices" },
   ],
   STUDENT: [
-    { label: "Home", icon: <HomeIcon />, path: "/student" },
-    { label: "My subjects", icon: <SubjectIcon />, path: "/student/subjects" },
-    {
-      label: "Assignments",
-      icon: <AssignmentIcon />,
-      path: "/student/assignments",
-    },
-    {
-      label: "Attendance",
-      icon: <EventAvailableIcon />,
-      path: "/student/attendance",
-    },
-    {
-      label: "Notices",
-      icon: <CampaignIcon />,
-      path: "/student/notices",
-      badge: true,
-    },
+    { labelKey: "nav.home", icon: <HomeIcon />, path: "/student" },
+    { labelKey: "nav.mySubjects", icon: <SubjectIcon />, path: "/student/subjects" },
+    { labelKey: "nav.assignments", icon: <AssignmentIcon />, path: "/student/assignments" },
+    { labelKey: "nav.attendance", icon: <EventAvailableIcon />, path: "/student/attendance" },
+    { labelKey: "nav.notices", icon: <CampaignIcon />, path: "/student/notices", badge: true },
   ],
   SCHOOL_ADMIN: [
-    { label: "Dashboard", icon: <DashboardIcon />, path: "/admin" },
-    { label: "Teachers", icon: <PeopleIcon />, path: "/admin/teachers" },
-    { label: "Students", icon: <PersonIcon />, path: "/admin/students" },
-    { label: "Classes", icon: <SchoolIcon />, path: "/admin/classes" },
-    { label: "Subjects", icon: <SubjectIcon />, path: "/admin/subjects" },
-    { label: "Notices", icon: <CampaignIcon />, path: "/admin/notices" },
+    { labelKey: "nav.dashboard", icon: <DashboardIcon />, path: "/admin" },
+    { labelKey: "nav.teachers", icon: <PeopleIcon />, path: "/admin/teachers" },
+    { labelKey: "nav.students", icon: <PersonIcon />, path: "/admin/students" },
+    { labelKey: "nav.classes", icon: <SchoolIcon />, path: "/admin/classes" },
+    { labelKey: "nav.subjects", icon: <SubjectIcon />, path: "/admin/subjects" },
+    { labelKey: "nav.notices", icon: <CampaignIcon />, path: "/admin/notices" },
   ],
   SUPER_ADMIN: [
-    { section: "OVERVIEW" },
-    { label: "Dashboard", icon: <DashboardIcon />, path: "/superadmin" },
-    {
-      label: "Analytics",
-      icon: <BarChartIcon />,
-      path: "/superadmin/analytics",
-    },
-    { section: "MANAGEMENT" },
-    { label: "Schools", icon: <SchoolIcon />, path: "/superadmin/schools" },
-    {
-      label: "Principals",
-      icon: <PersonIcon />,
-      path: "/superadmin/principals",
-    },
-    { label: "Notices", icon: <CampaignIcon />, path: "/superadmin/notices" },
-    { section: "SYSTEM" },
-    { label: "Settings", icon: <SettingsIcon />, path: "/superadmin/settings" },
+    { section: "nav.overview" },
+    { labelKey: "nav.dashboard", icon: <DashboardIcon />, path: "/superadmin" },
+    { labelKey: "nav.analytics", icon: <BarChartIcon />, path: "/superadmin/analytics" },
+    { section: "nav.management" },
+    { labelKey: "nav.schools", icon: <SchoolIcon />, path: "/superadmin/schools" },
+    { labelKey: "nav.principals", icon: <PersonIcon />, path: "/superadmin/principals" },
+    { labelKey: "nav.notices", icon: <CampaignIcon />, path: "/superadmin/notices" },
+    { section: "nav.system" },
+    { labelKey: "nav.settings", icon: <SettingsIcon />, path: "/superadmin/settings" },
   ],
 };
 
 const rootPaths = ["/teacher", "/student", "/admin", "/superadmin"];
 
-export default function Sidebar() {
+function SidebarContent({ onClose }) {
   const { user } = useSelector((s) => s.auth);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const items = navByRole[user?.role] || [];
 
   const isActive = (path) => {
@@ -105,6 +86,169 @@ export default function Sidebar() {
   };
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
+  const handleNav = (path) => {
+    navigate(path);
+    if (onClose) onClose();
+  };
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", pt: 2.5, px: 1.5 }}>
+      {/* Brand header */}
+      <Box sx={{ px: 1, mb: 3, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.03em",
+              lineHeight: 1.2,
+              mb: 0.5,
+            }}
+          >
+            {t("app.name")}
+          </Typography>
+          {isSuperAdmin ? (
+            <Box>
+              <Typography variant="caption" sx={{ display: "block", mb: 0.5 }}>
+                {user?.municipalityName || "Municipality"}
+              </Typography>
+              <Box
+                sx={{
+                  display: "inline-block",
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
+                  color: "success.main",
+                  fontSize: "0.6875rem",
+                  fontWeight: 600,
+                }}
+              >
+                {t("roles.SUPER_ADMIN")}
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="caption" sx={{ lineHeight: 1.4 }}>
+              {user?.name || ""}
+              {user?.role === "STUDENT" && user?.grade
+                ? ` · ${t("nav.classes")} ${user.grade}${user.section || ""}`
+                : user?.role
+                  ? ` · ${t(`roles.${user.role}`)}`
+                  : ""}
+            </Typography>
+          )}
+        </Box>
+        {onClose && (
+          <IconButton
+            size="small"
+            onClick={onClose}
+            sx={{ mt: -0.5, mr: -0.5 }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Navigation */}
+      <List disablePadding sx={{ flex: 1 }}>
+        {items.map((item, idx) => {
+          if (item.section) {
+            return (
+              <Typography
+                key={item.section}
+                variant="overline"
+                sx={{
+                  display: "block",
+                  px: 1,
+                  pt: idx === 0 ? 0 : 2.5,
+                  pb: 0.8,
+                  color: "text.secondary",
+                  fontSize: "0.6875rem",
+                }}
+              >
+                {t(item.section)}
+              </Typography>
+            );
+          }
+          const active = isActive(item.path);
+          return (
+            <MotionListItemButton
+              key={item.path}
+              onClick={() => handleNav(item.path)}
+              whileTap={{ scale: 0.98 }}
+              sx={{
+                mb: 0.3,
+                px: 1.5,
+                py: 0.9,
+                bgcolor: active
+                  ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                  : "transparent",
+                color: active ? "primary.main" : "text.secondary",
+                "&:hover": {
+                  bgcolor: active
+                    ? (theme) => alpha(theme.palette.primary.main, 0.12)
+                    : (theme) => alpha(theme.palette.text.primary, 0.04),
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 32,
+                  color: "inherit",
+                  "& .MuiSvgIcon-root": { fontSize: 18 },
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={t(item.labelKey)}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  fontWeight: active ? 600 : 400,
+                }}
+              />
+              {item.badge && (
+                <Badge
+                  variant="dot"
+                  color="error"
+                  sx={{ "& .MuiBadge-badge": { width: 8, height: 8, minWidth: 8 } }}
+                />
+              )}
+            </MotionListItemButton>
+          );
+        })}
+      </List>
+    </Box>
+  );
+}
+
+export default function Sidebar({ mobileOpen, onMobileClose }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  if (isMobile) {
+    return (
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: WIDTH,
+            boxSizing: "border-box",
+            bgcolor: "background.paper",
+          },
+        }}
+      >
+        <SidebarContent onClose={onMobileClose} />
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer
@@ -115,145 +259,11 @@ export default function Sidebar() {
         "& .MuiDrawer-paper": {
           width: WIDTH,
           boxSizing: "border-box",
-          borderRight: "0.5px solid var(--color-border-tertiary)",
-          bgcolor: "var(--color-background-primary)",
-          px: 1,
-          pt: 2,
+          bgcolor: "background.paper",
         },
       }}
     >
-      <Box sx={{ px: 1.5, mb: isSuperAdmin ? 2.5 : 3 }}>
-        <Typography
-          sx={{
-            fontWeight: 500,
-            fontSize: "13px",
-            color: "var(--color-text-primary)",
-            letterSpacing: -0.3,
-            lineHeight: 1.2,
-          }}
-        >
-          EduNepal
-        </Typography>
-        {isSuperAdmin ? (
-          <Box>
-            <Typography
-              sx={{
-                color: "var(--color-text-secondary)",
-                fontSize: "11px",
-                display: "block",
-                mb: 0.5,
-              }}
-            >
-              {user?.municipalityName || "Lalitpur Metropolitan City"}
-            </Typography>
-            <Box
-              sx={{
-                display: "inline-block",
-                padding: "2px 8px",
-                borderRadius: "4px",
-                bgcolor: "var(--color-background-success)",
-                color: "var(--color-text-success)",
-                fontWeight: 500,
-                fontSize: "11px",
-              }}
-            >
-              Super admin
-            </Box>
-          </Box>
-        ) : (
-          <Typography
-            sx={{ color: "var(--color-text-secondary)", fontSize: "11px" }}
-          >
-            {user?.role === "STUDENT"
-              ? `${user?.name || ""} · Class ${user?.grade || ""}${user?.section || ""}`
-              : `${user?.name || ""} · ${
-                  user?.role === "TEACHER"
-                    ? "Teacher"
-                    : user?.role === "SCHOOL_ADMIN"
-                      ? "Principal"
-                      : ""
-                }`}
-          </Typography>
-        )}
-      </Box>
-
-      <List disablePadding>
-        {items.map((item, idx) => {
-          if (item.section) {
-            return (
-              <Typography
-                key={item.section}
-                sx={{
-                  display: "block",
-                  px: 1.5,
-                  pt: idx === 0 ? 0 : 2,
-                  pb: 0.8,
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  letterSpacing: 0.5,
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                {item.section.charAt(0) + item.section.slice(1).toLowerCase()}
-              </Typography>
-            );
-          }
-          const active = isActive(item.path);
-          return (
-            <ListItemButton
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              sx={{
-                borderRadius: "var(--border-radius-md)",
-                mb: 0.3,
-                px: 1.5,
-                py: 0.8,
-                bgcolor: active
-                  ? "var(--color-background-info)"
-                  : "transparent",
-                color: active
-                  ? "var(--color-text-info)"
-                  : "var(--color-text-secondary)",
-                "&:hover": {
-                  bgcolor: active
-                    ? "var(--color-background-info)"
-                    : "var(--color-background-secondary)",
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 28,
-                  color: "inherit",
-                  "& .MuiSvgIcon-root": { fontSize: 15, opacity: 0.75 },
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.label}
-                primaryTypographyProps={{
-                  fontSize: "13px",
-                  fontWeight: active ? 500 : 400,
-                }}
-              />
-              {item.badge && (
-                <Badge
-                  badgeContent={2}
-                  color="error"
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      fontSize: "11px",
-                      minWidth: 16,
-                      height: 16,
-                    },
-                  }}
-                />
-              )}
-            </ListItemButton>
-          );
-        })}
-      </List>
+      <SidebarContent />
     </Drawer>
   );
 }

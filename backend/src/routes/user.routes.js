@@ -5,7 +5,7 @@ const { protect, authorize } = require("../middleware/auth");
 router.use(protect);
 router.get("/", authorize("SUPER_ADMIN", "SCHOOL_ADMIN"), c.getAll);
 router.get("/:id", authorize("SUPER_ADMIN", "SCHOOL_ADMIN"), c.getById);
-router.post("/", authorize("SUPER_ADMIN", "SCHOOL_ADMIN"), c.create);
+router.post("/", authorize("TEACHER", "SUPER_ADMIN", "SCHOOL_ADMIN"), c.create);
 router.put("/:id", authorize("SUPER_ADMIN", "SCHOOL_ADMIN"), c.update);
 router.patch(
   "/:id/deactivate",

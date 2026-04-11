@@ -10,6 +10,13 @@ import {
   InputBase,
   Skeleton,
   LinearProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputLabel,
 } from "@mui/material";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
@@ -17,9 +24,11 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import AddIcon from "@mui/icons-material/Add";
 import { useSelector } from "react-redux";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetStudentsQuery } from "@/store/api/studentApi";
+import { useCreateUserMutation } from "@/store/api/userApi";
 
 const avatarColors = [
   "var(--color-text-info)",
@@ -216,6 +225,10 @@ export default function TeacherStudents() {
   const navigate = useNavigate();
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [studentForm, setStudentForm] = useState({ name: "", email: "", phone: "", password: "", rollNumber: "", classId: "" });
+  const [formErrors, setFormErrors] = useState({});
+  const [createUser, { isLoading: creatingStudent }] = useCreateUserMutation();
 
   const { data: allClasses } = useGetClassesQuery({ schoolId: user?.schoolId });
   const classes = useMemo(
@@ -254,6 +267,22 @@ export default function TeacherStudents() {
     return { avg, low, total: students.length };
   }, [students]);
 
+  const handleAddStudent = async () => {
+    const errs = {};
+    if (!studentForm.name.trim()) errs.name = "Name is required";
+    if (!studentForm.email.trim()) errs.email = "Email is required";
+    if (!studentForm.password || studentForm.password.length < 6) errs.password = "Min 6 characters";
+    if (!studentForm.classId) errs.classId = "Select a class";
+    setFormErrors(errs);
+    if (Object.keys(errs).length) return;
+    try {
+      await createUser({ ...studentForm, role: "STUDENT", schoolId: user?.schoolId }).unwrap();
+      setAddOpen(false);
+      setStudentForm({ name: "", email: "", phone: "", password: "", rollNumber: "", classId: "" });
+      setFormErrors({});
+    } catch { /* handled by RTK */ }
+  };
+
   return (
     <Box>
       {/* Header */}
@@ -277,6 +306,15 @@ export default function TeacherStudents() {
               : "Select a class to view students"}
           </Typography>
         </Box>
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<AddIcon />}
+          onClick={() => setAddOpen(true)}
+          sx={{ textTransform: "none", fontSize: "13px" }}
+        >
+          Add Student
+        </Button>
       </Box>
 
       {/* Controls */}
@@ -749,6 +787,85 @@ export default function TeacherStudents() {
           )}
         </Box>
       )}
+
+      {/* Add Student Dialog */}
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>
+          Add Student
+        </DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "8px !important" }}>
+          <TextField
+            label="Full Name"
+            fullWidth
+            value={studentForm.name}
+            onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+            error={!!formErrors.name}
+            helperText={formErrors.name}
+          />
+          <TextField
+            label="Email"
+            type="email"
+            fullWidth
+            value={studentForm.email}
+            onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+            error={!!formErrors.email}
+            helperText={formErrors.email}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            fullWidth
+            value={studentForm.password}
+            onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
+            error={!!formErrors.password}
+            helperText={formErrors.password || "Minimum 6 characters"}
+          />
+          <TextField
+            label="Phone (optional)"
+            fullWidth
+            value={studentForm.phone}
+            onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+          />
+          <TextField
+            label="Roll Number (optional)"
+            fullWidth
+            value={studentForm.rollNumber}
+            onChange={(e) => setStudentForm({ ...studentForm, rollNumber: e.target.value })}
+          />
+          <FormControl fullWidth error={!!formErrors.classId}>
+            <InputLabel>Class</InputLabel>
+            <Select
+              value={studentForm.classId}
+              label="Class"
+              onChange={(e) => setStudentForm({ ...studentForm, classId: e.target.value })}
+            >
+              {(classes || []).map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  Class {c.grade} {c.section}
+                </MenuItem>
+              ))}
+            </Select>
+            {formErrors.classId && (
+              <Typography sx={{ fontSize: "12px", color: "error.main", mt: 0.5, ml: 1.5 }}>
+                {formErrors.classId}
+              </Typography>
+            )}
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setAddOpen(false)} sx={{ textTransform: "none" }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddStudent}
+            disabled={creatingStudent}
+            sx={{ textTransform: "none" }}
+          >
+            {creatingStudent ? "Adding…" : "Add Student"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

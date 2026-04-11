@@ -2,6 +2,9 @@ import { apiSlice } from "./apiSlice";
 
 export const dashboardApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
+    getPublicStats: build.query({
+      query: () => "/dashboard/public-stats",
+    }),
     getDashboardStats: build.query({
       query: () => "/dashboard/stats",
       providesTags: ["Dashboard"],
@@ -27,6 +30,7 @@ export const dashboardApi = apiSlice.injectEndpoints({
 });
 
 export const {
+  useGetPublicStatsQuery,
   useGetDashboardStatsQuery,
   useGetSuperadminStatsQuery,
   useGetSuperadminAnalyticsQuery,

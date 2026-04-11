@@ -288,14 +288,12 @@ export default function TeacherDashboard() {
             {classOverview.map((c) => (
               <Grid size={{ xs: 6, sm: 4, md: 3 }} key={c._id}>
                 <Box
-                  onClick={() => navigate("/teacher/students")}
                   sx={{
                     bgcolor: "var(--color-background-primary)",
                     border: "0.5px solid var(--color-border-tertiary)",
                     borderRadius: "var(--border-radius-md)",
                     p: 1.5,
-                    cursor: "pointer",
-                    "&:hover": { bgcolor: "var(--color-background-secondary)" },
+                    cursor: "default",
                   }}
                 >
                   <Box
@@ -339,6 +337,26 @@ export default function TeacherDashboard() {
                       {c.subjectCount} subject
                       {c.subjectCount !== 1 ? "s" : ""}
                     </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: "11px", textTransform: "none", flex: 1, py: 0.25 }}
+                      onClick={() =>
+                        navigate(`/teacher/content?classId=${c._id}`)
+                      }
+                    >
+                      Content
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: "11px", textTransform: "none", flex: 1, py: 0.25 }}
+                      onClick={() => navigate("/teacher/students")}
+                    >
+                      Students
+                    </Button>
                   </Box>
                 </Box>
               </Grid>

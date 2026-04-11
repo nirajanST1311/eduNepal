@@ -747,10 +747,39 @@ async function seed() {
       title: t,
       body: `Details regarding ${t.toLowerCase()} for ${school.name}. Please check the schedule and plan accordingly.`,
       from: "school",
+      scope: "global",
       category: rng(["general", "event", "holiday", "exam_schedule"]),
       priority: rng(["low", "medium", "high"]),
     }));
     await Notice.insertMany(schoolNotices);
+
+    /* 4h2. Class-specific notices from teachers */
+    const classNoticesBulk = [];
+    for (const cls of classDocs) {
+      const teacher =
+        teacherDocs.find((t) =>
+          t.classIds?.some((cid) => cid.toString() === cls._id.toString()),
+        ) || teacherDocs[0];
+      const titles = [
+        `Grade ${cls.grade}${cls.section || ""} - Weekly Test Schedule`,
+        `Grade ${cls.grade}${cls.section || ""} - Project Submission Reminder`,
+        `Grade ${cls.grade}${cls.section || ""} - Parent Meeting Notice`,
+      ];
+      titles.forEach((title, idx) => {
+        classNoticesBulk.push({
+          schoolId: sid,
+          authorId: teacher._id,
+          title,
+          body: `Important notice for students of Grade ${cls.grade}${cls.section || ""}. Please read carefully and inform your parents.`,
+          from: "school",
+          scope: "class",
+          classId: cls._id,
+          category: rng(["general", "exam_schedule", "event"]),
+          priority: rng(["low", "medium", "high"]),
+        });
+      });
+    }
+    await Notice.insertMany(classNoticesBulk);
 
     /* 4i. Student notes from teachers */
     const noteBulk = [];

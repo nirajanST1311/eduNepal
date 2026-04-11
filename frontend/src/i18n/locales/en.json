@@ -1,0 +1,162 @@
+{
+  "app": {
+    "name": "EduNepal",
+    "tagline": "Nepal Municipality School Platform",
+    "description": "A comprehensive digital education platform connecting schools, teachers, and students across Nepal's municipalities."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "content": "Content",
+    "assignments": "Assignments",
+    "attendance": "Attendance",
+    "students": "Students",
+    "notices": "Notices",
+    "home": "Home",
+    "mySubjects": "My Subjects",
+    "teachers": "Teachers",
+    "classes": "Classes",
+    "subjects": "Subjects",
+    "schools": "Schools",
+    "principals": "Principals",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "profile": "Profile",
+    "changePassword": "Change Password",
+    "overview": "Overview",
+    "management": "Management",
+    "system": "System"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signingIn": "Signing in…",
+    "email": "Email",
+    "password": "Password",
+    "loginFailed": "Login failed",
+    "loginSubtitle": "Nepal municipality school platform",
+    "forgotPassword": "Forgot password?",
+    "unauthorized": "You don't have permission to view this page",
+    "goBack": "Go back",
+    "notAuthenticated": "Not authenticated"
+  },
+  "profile": {
+    "title": "Profile",
+    "changePassword": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordChanged": "Password changed successfully.",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordFailed": "Failed to change password.",
+    "changeBtn": "Change password"
+  },
+  "public": {
+    "hero": {
+      "title": "Empowering Education Across Nepal",
+      "subtitle": "A unified digital platform connecting municipalities, schools, teachers, and students for better learning outcomes.",
+      "cta": "Sign in to continue",
+      "learnMore": "Learn more"
+    },
+    "stats": {
+      "schools": "Schools",
+      "students": "Students",
+      "teachers": "Teachers",
+      "municipalities": "Municipalities",
+      "subjects": "Subjects",
+      "classes": "Classes"
+    },
+    "features": {
+      "title": "Built for Nepal's Education System",
+      "subtitle": "Everything needed to manage and deliver quality education.",
+      "attendance": {
+        "title": "Smart Attendance",
+        "desc": "Track daily attendance with automated reports and analytics."
+      },
+      "content": {
+        "title": "Digital Content",
+        "desc": "Organized chapters, topics, and resources for every subject."
+      },
+      "assignments": {
+        "title": "Assignment Management",
+        "desc": "Create, submit, and grade assignments seamlessly."
+      },
+      "analytics": {
+        "title": "Real-time Analytics",
+        "desc": "Dashboards and reports for data-driven decisions."
+      },
+      "notices": {
+        "title": "Notice Board",
+        "desc": "Instant communication between schools and stakeholders."
+      },
+      "multiRole": {
+        "title": "Multi-Role Access",
+        "desc": "Dedicated dashboards for admins, teachers, and students."
+      }
+    },
+    "footer": "© {{year}} EduNepal. Built for Nepal's municipalities."
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "noData": "No data yet",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add",
+    "search": "Search…",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "submit": "Submit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "active": "Active",
+    "inactive": "Inactive",
+    "total": "Total",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "minLength": "Must be at least {{min}} characters",
+    "maxLength": "Must be at most {{max}} characters"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Super Admin",
+    "SCHOOL_ADMIN": "Principal",
+    "TEACHER": "Teacher",
+    "STUDENT": "Student"
+  },
+  "breadcrumb": {
+    "superadmin": "Super Admin",
+    "admin": "Admin",
+    "teacher": "Teacher",
+    "student": "Student",
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "schools": "Schools",
+    "principals": "Principals",
+    "notices": "Notices",
+    "settings": "Settings",
+    "content": "Content",
+    "assignments": "Assignments",
+    "attendance": "Attendance",
+    "students": "Students",
+    "subjects": "My Subjects",
+    "profile": "Profile",
+    "change-password": "Change Password",
+    "teachers": "Teachers",
+    "classes": "Classes",
+    "add": "Add",
+    "create": "Create",
+    "grade": "Grade",
+    "edit": "Edit"
+  }
+}

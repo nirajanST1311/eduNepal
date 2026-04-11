@@ -22,6 +22,15 @@ const noticeSchema = new mongoose.Schema(
       enum: ["low", "medium", "high"],
       default: "medium",
     },
+    scope: {
+      type: String,
+      enum: ["global", "class"],
+      default: "global",
+    },
+    classId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
+    },
   },
   { timestamps: true },
 );

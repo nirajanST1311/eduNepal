@@ -1,8 +1,11 @@
 import { Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function UnauthorizedPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
   return (
     <Box
       sx={{
@@ -13,14 +16,14 @@ export default function UnauthorizedPage() {
         justifyContent: "center",
       }}
     >
-      <Typography variant="h4" sx={{ mb: 1 }}>
+      <Typography variant="h1" sx={{ mb: 1, fontSize: "3rem", fontWeight: 700 }}>
         403
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        You don't have permission to view this page
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        {t("auth.unauthorized")}
       </Typography>
       <Button variant="outlined" onClick={() => navigate(-1)}>
-        Go back
+        {t("auth.goBack")}
       </Button>
     </Box>
   );

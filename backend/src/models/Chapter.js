@@ -17,7 +17,7 @@ const chapterSchema = new mongoose.Schema(
     order: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["draft", "published", "not_started"],
+      enum: ["draft", "published", "not_started", "inactive"],
       default: "not_started",
     },
     scheduledAt: Date,

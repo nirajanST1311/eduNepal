@@ -6,6 +6,35 @@ const Assignment = require("../models/Assignment");
 const Submission = require("../models/Submission");
 const Chapter = require("../models/Chapter");
 const Notice = require("../models/Notice");
+const School = require("../models/School");
+
+/**
+ * Public stats — no auth required.
+ * Returns aggregate counts for the landing page.
+ */
+exports.getPublicStats = async (_req, res) => {
+  const [schools, students, teachers, subjects, classes] = await Promise.all([
+    School.countDocuments({ active: { $ne: false } }),
+    User.countDocuments({ role: "STUDENT", active: true }),
+    User.countDocuments({ role: "TEACHER", active: true }),
+    Subject.countDocuments(),
+    Class.countDocuments(),
+  ]);
+
+  // Count distinct municipalityId values
+  const municipalities = await User.distinct("municipalityId", {
+    role: "SUPER_ADMIN",
+  });
+
+  res.json({
+    schools,
+    students,
+    teachers,
+    subjects,
+    classes,
+    municipalities: municipalities.length,
+  });
+};
 
 exports.getStats = async (req, res) => {
   const schoolId = req.user.schoolId;

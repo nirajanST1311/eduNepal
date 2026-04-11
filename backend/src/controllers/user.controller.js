@@ -36,6 +36,14 @@ exports.create = async (req, res) => {
   const { email, role } = req.body;
 
   // Validate role-based creation permissions
+  if (req.user.role === "TEACHER") {
+    if (role !== "STUDENT") {
+      return res
+        .status(403)
+        .json({ message: "Teachers can only create students" });
+    }
+    req.body.schoolId = req.user.schoolId;
+  }
   if (req.user.role === "SCHOOL_ADMIN") {
     if (!["TEACHER", "STUDENT"].includes(role)) {
       return res

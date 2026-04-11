@@ -16,6 +16,11 @@ const topicSchema = new mongoose.Schema(
     content: String,
     fileUrl: String,
     order: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ["draft", "published", "inactive"],
+      default: "published",
+    },
   },
   { timestamps: true },
 );

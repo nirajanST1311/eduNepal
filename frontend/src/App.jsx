@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import LoginPage from "@/pages/auth/LoginPage";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
+import LandingPage from "@/pages/public/LandingPage";
 import UnauthorizedPage from "@/pages/auth/UnauthorizedPage";
 import ProfilePage from "@/pages/profile/ProfilePage";
 import ChangePassword from "@/pages/profile/ChangePassword";
@@ -11,6 +12,7 @@ import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
 import TeacherContent from "@/pages/teacher/TeacherContent";
 import AddChapter from "@/pages/teacher/AddChapter";
 import EditChapter from "@/pages/teacher/EditChapter";
+import ChapterDetail from "@/pages/teacher/ChapterDetail";
 import TeacherAssignments from "@/pages/teacher/TeacherAssignments";
 import CreateAssignment from "@/pages/teacher/CreateAssignment";
 import GradeAssignment from "@/pages/teacher/GradeAssignment";
@@ -56,14 +58,26 @@ function App() {
   const { user } = useSelector((s) => s.auth);
 
   return (
+    <ErrorBoundary fullPage>
     <Routes>
+      {/* Public landing page */}
+      <Route
+        path="/"
+        element={
+          user && roleHome[user.role] ? (
+            <Navigate to={roleHome[user.role]} replace />
+          ) : (
+            <LandingPage />
+          )
+        }
+      />
       <Route
         path="/login"
         element={
           user && roleHome[user.role] ? (
             <Navigate to={roleHome[user.role]} replace />
           ) : (
-            <LoginPage />
+            <LandingPage />
           )
         }
       />
@@ -75,6 +89,10 @@ function App() {
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/content" element={<TeacherContent />} />
           <Route path="/teacher/content/add" element={<AddChapter />} />
+          <Route
+            path="/teacher/content/:chapterId"
+            element={<ChapterDetail />}
+          />
           <Route
             path="/teacher/content/:chapterId/edit"
             element={<EditChapter />}
@@ -165,8 +183,9 @@ function App() {
       </Route>
 
       {/* Default redirect */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </ErrorBoundary>
   );
 }
 
