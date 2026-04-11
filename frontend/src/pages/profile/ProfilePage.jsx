@@ -144,7 +144,7 @@ export default function ProfilePage() {
                 {initials}
               </Avatar>
               {editing && (
-                <Tooltip title="Change photo">
+                <Tooltip title="Change photo (JPG, PNG, WebP, AVIF)">
                   <IconButton size="small" onClick={() => fileRef.current?.click()}
                     sx={{
                       position: "absolute", bottom: 2, right: -4,
@@ -155,7 +155,7 @@ export default function ProfilePage() {
                   </IconButton>
                 </Tooltip>
               )}
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" hidden onChange={handleAvatarChange} />
             </Box>
 
             <Box sx={{ display: "flex", gap: 1, alignSelf: "flex-end", pb: 0.5 }}>

@@ -22,6 +22,10 @@ export const assignmentApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Assignments"],
     }),
+    deleteAssignment: build.mutation({
+      query: (id) => ({ url: `/assignments/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Assignments"],
+    }),
     getSubmissions: build.query({
       query: (assignmentId) => `/assignments/${assignmentId}/submissions`,
       providesTags: ["Submissions"],
@@ -50,6 +54,7 @@ export const {
   useGetAssignmentQuery,
   useCreateAssignmentMutation,
   useUpdateAssignmentMutation,
+  useDeleteAssignmentMutation,
   useGetSubmissionsQuery,
   useSubmitAssignmentMutation,
   useGradeSubmissionMutation,

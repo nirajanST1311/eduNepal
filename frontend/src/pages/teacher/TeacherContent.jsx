@@ -166,6 +166,15 @@ export default function TeacherContent() {
     [dropdownSubjects, user?.subjectIds],
   );
 
+  // Safe values for Select — prevents MUI out-of-range warning when URL params
+  // contain IDs that don't match the currently loaded options
+  const safeClassId = !loadingClasses && classes.length > 0
+    ? (classes.some((c) => c._id === classId) ? classId : "")
+    : classId;
+  const safeSubjectId = !loadingSubjects && subjects.length > 0
+    ? (subjects.some((s) => s._id === subjectId) ? subjectId : "")
+    : subjectId;
+
   // All teacher's subjects (overview)
   const { data: teacherSubjects, isLoading: loadingTeacherSubs } =
     useGetSubjectsQuery(user?._id ? { teacherId: user._id } : undefined, {
@@ -353,7 +362,7 @@ export default function TeacherContent() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
           <FormControl sx={{ minWidth: 160 }}>
             <Select
-              value={classId}
+              value={safeClassId}
               displayEmpty
               size="small"
               onChange={(e) => setClassId(e.target.value)}
@@ -388,7 +397,7 @@ export default function TeacherContent() {
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <FormControl sx={{ minWidth: 160 }}>
             <Select
-              value={subjectId}
+              value={safeSubjectId}
               displayEmpty
               size="small"
               onChange={(e) => setSubjectId(e.target.value)}

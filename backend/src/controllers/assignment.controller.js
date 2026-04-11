@@ -119,3 +119,13 @@ exports.grade = async (req, res) => {
     return res.status(404).json({ message: "Submission not found" });
   res.json(submission);
 };
+
+exports.deleteAssignment = async (req, res) => {
+  const assignment = await Assignment.findById(req.params.id);
+  if (!assignment)
+    return res.status(404).json({ message: "Assignment not found" });
+  if (String(assignment.teacherId) !== String(req.user._id))
+    return res.status(403).json({ message: "Not authorized" });
+  await Assignment.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
+};
