@@ -25,6 +25,9 @@ exports.login = async (req, res) => {
       email: user.email,
       role: user.role,
       schoolId: user.schoolId,
+      classId: user.classId,
+      classIds: user.classIds,
+      subjectIds: user.subjectIds,
     },
   });
 };

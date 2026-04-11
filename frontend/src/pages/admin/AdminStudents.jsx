@@ -702,7 +702,7 @@ export default function AdminStudents() {
         <DialogContent>
           {uploading && <LinearProgress sx={{ mb: 2 }} />}
 
-          {!uploadResult && (
+          {!uploadResult && !uploading && (
             <>
               <Typography
                 sx={{
@@ -798,8 +798,10 @@ export default function AdminStudents() {
                   >
                     {uploadResult.errors.map((err, i) => (
                       <Typography key={i} sx={{ fontSize: "12px", mb: 0.5 }}>
-                        {err.row > 0 ? `Row ${err.row}: ` : ""}
-                        {err.error}
+                        {err.row > 0 ? <strong>Row {err.row}</strong> : ""}
+                        {err.email ? ` (${err.email})` : ""}
+                        {err.row > 0 || err.email ? ": " : ""}
+                        {err.error || err.reason || "Unknown error"}
                       </Typography>
                     ))}
                   </Box>

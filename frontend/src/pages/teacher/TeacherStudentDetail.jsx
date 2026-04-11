@@ -56,17 +56,15 @@ export default function TeacherStudentDetail() {
     assignments = [],
     avgScore,
     notes = [],
-    topicEngagement = [],
-    recentActivity = [],
     monthlyAttendance = {},
+    topicEngagement = [],
+    doneCount = 0,
+    totalAssignments = 0,
   } = data;
 
-  const attPct =
-    typeof attendance === "number" ? attendance : attendance?.percent;
+  const attPct = attendance?.percentage ?? null;
   const isLow = attPct != null && attPct < 75;
-  const assignmentsDone = Array.isArray(assignments)
-    ? `${assignments.filter((a) => a.submitted || a.status === "graded").length}/${assignments.length}`
-    : "—";
+  const assignmentsDone = `${doneCount}/${totalAssignments}`;
 
   const handleAddNote = async () => {
     if (!note.trim()) return;
@@ -146,25 +144,20 @@ export default function TeacherStudentDetail() {
               sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
             >
               Roll No. {student.rollNumber || "—"} · Class {student.grade || ""}
-              {student.section || ""} · {student.schoolName || ""}
+              {student.section ? ` ${student.section}` : ""}
+              {student.schoolName ? ` · ${student.schoolName}` : ""}
             </Typography>
             <Typography
               sx={{ fontSize: "12px", color: "var(--color-text-secondary)" }}
             >
-              Enrolled:{" "}
+              {student.email || ""}
+              {student.phone ? ` · ${student.phone}` : ""}
               {student.enrolledAt
-                ? dayjs(student.enrolledAt).format("MMM YYYY")
-                : "—"}
+                ? ` · Enrolled ${dayjs(student.enrolledAt).format("MMM YYYY")}`
+                : ""}
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small">
-              Send notice
-            </Button>
-            <Button variant="outlined" size="small">
-              View all submissions
-            </Button>
-          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}></Box>
         </Box>
       </Box>
 
@@ -172,7 +165,10 @@ export default function TeacherStudentDetail() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: {
+            xs: "repeat(2, 1fr)",
+            md: "repeat(4, 1fr)",
+          },
           gap: 2,
           mb: 3,
         }}
@@ -399,22 +395,24 @@ export default function TeacherStudentDetail() {
           </Typography>
         )}
         {assignments.map((a, i) => {
-          const statusColor =
-            a.status === "graded"
-              ? "var(--color-text-success)"
-              : a.status === "late"
-                ? "var(--color-text-danger)"
-                : a.status === "missing"
-                  ? "var(--color-text-danger)"
-                  : "var(--color-text-secondary)";
-          const statusLabel =
-            a.status === "graded"
+          const sub = a.submission;
+          const hasSubmitted = !!sub;
+          const isPastDue = a.dueDate && dayjs(a.dueDate).isBefore(dayjs());
+          const statusLabel = sub
+            ? sub.marks != null
               ? "Graded"
-              : a.status === "late"
+              : sub.late
                 ? "Late"
-                : a.status === "missing"
-                  ? "Missing"
-                  : a.status || "";
+                : "Submitted"
+            : isPastDue
+              ? "Missing"
+              : "Pending";
+          const statusColor =
+            statusLabel === "Graded"
+              ? "var(--color-text-success)"
+              : statusLabel === "Missing" || statusLabel === "Late"
+                ? "var(--color-text-danger)"
+                : "var(--color-text-secondary)";
           return (
             <Box
               key={a._id || i}
@@ -439,161 +437,107 @@ export default function TeacherStudentDetail() {
                     color: "var(--color-text-secondary)",
                   }}
                 >
-                  {a.submittedAt
-                    ? `Submitted ${dayjs(a.submittedAt).format("MMM D")}`
+                  {a.subject ? `${a.subject} · ` : ""}
+                  {sub?.submittedAt
+                    ? `Submitted ${dayjs(sub.submittedAt).format("MMM D")}`
                     : a.dueDate
                       ? `Due ${dayjs(a.dueDate).format("MMM D")}`
                       : ""}
-                  {a.daysLate ? ` · ${a.daysLate} days late` : ""}
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                {a.score != null && (
+                {hasSubmitted && sub.marks != null && (
                   <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
-                    {a.score}/{a.total || 20}
+                    {sub.marks}/{a.maxMarks || "—"}
                   </Typography>
                 )}
-                {statusLabel && (
-                  <Typography
-                    sx={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: statusColor,
-                    }}
-                  >
-                    {statusLabel}
-                  </Typography>
-                )}
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: statusColor,
+                  }}
+                >
+                  {statusLabel}
+                </Typography>
               </Box>
             </Box>
           );
         })}
       </Box>
 
-      {/* Recent activity + Teacher's note */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
+      {/* Teacher's notes */}
+      <Box
+        sx={{
+          bgcolor: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-tertiary)",
+          borderRadius: "var(--border-radius-lg)",
+          p: 2,
+        }}
+      >
+        <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
+          Teacher&apos;s Notes
+        </Typography>
+        {notes.map((n) => (
           <Box
+            key={n._id}
             sx={{
-              bgcolor: "var(--color-background-primary)",
-              border: "0.5px solid var(--color-border-tertiary)",
-              borderRadius: "var(--border-radius-lg)",
-              height: "100%",
-              p: 2,
+              borderLeft: "3px solid var(--color-text-warning)",
+              pl: 1.5,
+              py: 0.5,
+              mb: 1.5,
+              bgcolor: "var(--color-background-warning)",
+              borderRadius: "0 4px 4px 0",
             }}
           >
-            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
-              Recent activity
+            <Typography
+              sx={{
+                fontStyle: "italic",
+                fontSize: "13px",
+                color: "var(--color-text-warning)",
+              }}
+            >
+              "{n.content}"
             </Typography>
-            {recentActivity.length === 0 && (
-              <Typography
-                sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
-              >
-                No recent activity
-              </Typography>
-            )}
-            {recentActivity.map((a, i) => (
-              <Box key={i} sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    bgcolor: "var(--color-text-secondary)",
-                    mt: 0.7,
-                    flexShrink: 0,
-                  }}
-                />
-                <Box>
-                  <Typography sx={{ fontSize: "13px" }}>{a.label}</Typography>
-                  <Typography
-                    sx={{
-                      fontSize: "12px",
-                      color: "var(--color-text-secondary)",
-                    }}
-                  >
-                    {a.date}
-                  </Typography>
-                </Box>
-              </Box>
-            ))}
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Added {n.teacherId?.name ? `by ${n.teacherId.name} · ` : ""}
+              {dayjs(n.createdAt).format("MMM D")}
+            </Typography>
           </Box>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box
-            sx={{
-              bgcolor: "var(--color-background-primary)",
-              border: "0.5px solid var(--color-border-tertiary)",
-              borderRadius: "var(--border-radius-lg)",
-              height: "100%",
-              p: 2,
-            }}
+        ))}
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="Add a note about this student..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          multiline
+          minRows={2}
+          sx={{ mt: 1, mb: 1 }}
+        />
+        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+          <Button
+            size="small"
+            onClick={() => setNote("")}
+            disabled={!note.trim()}
           >
-            <Typography sx={{ fontSize: "13px", fontWeight: 500, mb: 2 }}>
-              Teacher's note
-            </Typography>
-            {notes.map((n) => (
-              <Box
-                key={n._id}
-                sx={{
-                  borderLeft: "3px solid var(--color-text-warning)",
-                  pl: 1.5,
-                  py: 0.5,
-                  mb: 1.5,
-                  bgcolor: "var(--color-background-warning)",
-                  borderRadius: "0 4px 4px 0",
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontStyle: "italic",
-                    fontSize: "13px",
-                    color: "var(--color-text-warning)",
-                  }}
-                >
-                  "{n.text}"
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "12px",
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  Added {dayjs(n.createdAt).format("MMM D")}
-                </Typography>
-              </Box>
-            ))}
-            <TextField
-              size="small"
-              fullWidth
-              placeholder="Add a note about this student..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              multiline
-              minRows={2}
-              sx={{ mt: 1, mb: 1 }}
-            />
-            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-              <Button
-                size="small"
-                onClick={() => setNote("")}
-                disabled={!note.trim()}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleAddNote}
-                disabled={noting || !note.trim()}
-              >
-                Save note
-              </Button>
-            </Box>
-          </Box>
-        </Grid>
-      </Grid>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleAddNote}
+            disabled={noting || !note.trim()}
+          >
+            Save note
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }

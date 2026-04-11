@@ -10,6 +10,7 @@ import ChangePassword from "@/pages/profile/ChangePassword";
 import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
 import TeacherContent from "@/pages/teacher/TeacherContent";
 import AddChapter from "@/pages/teacher/AddChapter";
+import EditChapter from "@/pages/teacher/EditChapter";
 import TeacherAssignments from "@/pages/teacher/TeacherAssignments";
 import CreateAssignment from "@/pages/teacher/CreateAssignment";
 import GradeAssignment from "@/pages/teacher/GradeAssignment";
@@ -20,6 +21,8 @@ import TeacherNotices from "@/pages/teacher/TeacherNotices";
 // Student
 import StudentHome from "@/pages/student/StudentHome";
 import MySubjects from "@/pages/student/MySubjects";
+import SubjectDetail from "@/pages/student/SubjectDetail";
+import TopicViewer from "@/pages/student/TopicViewer";
 import StudentAssignments from "@/pages/student/StudentAssignments";
 import StudentAttendance from "@/pages/student/StudentAttendance";
 import StudentNotices from "@/pages/student/StudentNotices";
@@ -72,6 +75,10 @@ function App() {
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/content" element={<TeacherContent />} />
           <Route path="/teacher/content/add" element={<AddChapter />} />
+          <Route
+            path="/teacher/content/:chapterId/edit"
+            element={<EditChapter />}
+          />
           <Route path="/teacher/assignments" element={<TeacherAssignments />} />
           <Route
             path="/teacher/assignments/create"
@@ -98,6 +105,14 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/student" element={<StudentHome />} />
           <Route path="/student/subjects" element={<MySubjects />} />
+          <Route
+            path="/student/subjects/:subjectId"
+            element={<SubjectDetail />}
+          />
+          <Route
+            path="/student/subjects/:subjectId/chapters/:chapterId/topics/:topicId"
+            element={<TopicViewer />}
+          />
           <Route path="/student/assignments" element={<StudentAssignments />} />
           <Route path="/student/attendance" element={<StudentAttendance />} />
           <Route path="/student/notices" element={<StudentNotices />} />

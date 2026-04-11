@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Subject = require("../models/Subject");
 
 exports.getAll = async (req, res) => {
   const filter = { active: true };
@@ -15,6 +16,7 @@ exports.getAll = async (req, res) => {
     .select("-password")
     .populate("schoolId", "name")
     .populate("classId", "grade section")
+    .populate("classIds", "grade section")
     .populate("subjectIds", "name");
   res.json(users);
 };
@@ -24,6 +26,7 @@ exports.getById = async (req, res) => {
     .select("-password")
     .populate("schoolId", "name")
     .populate("classId", "grade section")
+    .populate("classIds", "grade section")
     .populate("subjectIds", "name");
   if (!user) return res.status(404).json({ message: "User not found" });
   res.json(user);
@@ -55,10 +58,20 @@ exports.create = async (req, res) => {
   }
 
   const user = await User.create(req.body);
+
+  // Sync Subject.teacherId for teacher assignments
+  if (role === "TEACHER" && req.body.subjectIds?.length) {
+    await Subject.updateMany(
+      { _id: { $in: req.body.subjectIds } },
+      { teacherId: user._id },
+    );
+  }
+
   const populated = await User.findById(user._id)
     .select("-password")
     .populate("schoolId", "name")
     .populate("classId", "grade section")
+    .populate("classIds", "grade section")
     .populate("subjectIds", "name");
   res.status(201).json(populated);
 };
@@ -84,8 +97,26 @@ exports.update = async (req, res) => {
     .select("-password")
     .populate("schoolId", "name")
     .populate("classId", "grade section")
+    .populate("classIds", "grade section")
     .populate("subjectIds", "name");
   if (!user) return res.status(404).json({ message: "User not found" });
+
+  // Sync Subject.teacherId for teacher assignments
+  if (user.role === "TEACHER" && req.body.subjectIds) {
+    // Remove this teacher from subjects no longer assigned
+    await Subject.updateMany(
+      { teacherId: user._id, _id: { $nin: req.body.subjectIds } },
+      { $unset: { teacherId: "" } },
+    );
+    // Set this teacher on newly assigned subjects
+    if (req.body.subjectIds.length) {
+      await Subject.updateMany(
+        { _id: { $in: req.body.subjectIds } },
+        { teacherId: user._id },
+      );
+    }
+  }
+
   res.json(user);
 };
 

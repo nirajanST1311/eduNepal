@@ -41,8 +41,24 @@ import {
   useDeactivateUserMutation,
   useBulkUploadTeachersMutation,
 } from "@/store/api/userApi";
+import { useGetClassesQuery } from "@/store/api/classApi";
+import { useGetSubjectsQuery } from "@/store/api/subjectApi";
+import Checkbox from "@mui/material/Checkbox";
+import ListItemText from "@mui/material/ListItemText";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
-const empty = { name: "", email: "", phone: "", password: "" };
+const empty = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  classIds: [],
+  subjectIds: [],
+};
 
 export default function AdminTeachers() {
   const { user } = useSelector((s) => s.auth);
@@ -55,6 +71,12 @@ export default function AdminTeachers() {
   const [deactivateUser] = useDeactivateUserMutation();
   const [bulkUploadTeachers, { isLoading: uploading }] =
     useBulkUploadTeachersMutation();
+  const { data: classes = [] } = useGetClassesQuery({
+    schoolId: user?.schoolId,
+  });
+  const { data: allSubjects = [] } = useGetSubjectsQuery({
+    schoolId: user?.schoolId,
+  });
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -83,10 +105,22 @@ export default function AdminTeachers() {
 
   const openEdit = (t) => {
     setEditing(t._id);
-    setForm({ name: t.name, email: t.email, phone: t.phone || "" });
+    setForm({
+      name: t.name,
+      email: t.email,
+      phone: t.phone || "",
+      classIds: (t.classIds || []).map((c) => c._id || c),
+      subjectIds: (t.subjectIds || []).map((s) => s._id || s),
+    });
     setFieldErrors({});
     setOpen(true);
   };
+
+  // Subjects filtered to only selected classes
+  const availableSubjects = allSubjects.filter((s) => {
+    const cId = s.classId?._id || s.classId;
+    return form.classIds.includes(cId);
+  });
 
   const handleSubmit = async () => {
     const errs = {};
@@ -107,6 +141,7 @@ export default function AdminTeachers() {
           schoolId: user?.schoolId,
         }).unwrap();
       }
+
       setOpen(false);
       setForm(empty);
       setEditing(null);
@@ -249,6 +284,7 @@ export default function AdminTeachers() {
               <TableCell>Teacher</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Phone</TableCell>
+              <TableCell>Classes</TableCell>
               <TableCell>Subjects</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -257,7 +293,7 @@ export default function AdminTeachers() {
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {[1, 2, 3, 4, 5].map((c) => (
+                    {[1, 2, 3, 4, 5, 6].map((c) => (
                       <TableCell key={c}>
                         <Skeleton width={c === 4 ? 120 : 80} />
                       </TableCell>
@@ -298,6 +334,38 @@ export default function AdminTeachers() {
                     </TableCell>
                     <TableCell>{t.email}</TableCell>
                     <TableCell>{t.phone || "—"}</TableCell>
+                    <TableCell>
+                      {t.classIds?.length > 0 ? (
+                        <Box
+                          sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}
+                        >
+                          {t.classIds.slice(0, 3).map((c) => (
+                            <Chip
+                              key={c._id}
+                              label={`${c.grade} ${c.section || ""}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                          {t.classIds.length > 3 && (
+                            <Chip
+                              label={`+${t.classIds.length - 3}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography
+                          sx={{
+                            fontSize: "12px",
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          No classes
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {t.subjectIds?.length > 0 ? (
                         <Box
@@ -348,7 +416,7 @@ export default function AdminTeachers() {
                 ))}
             {!isLoading && filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} sx={{ textAlign: "center", py: 4 }}>
+                <TableCell colSpan={6} sx={{ textAlign: "center", py: 4 }}>
                   <PeopleEmpty search={search} />
                 </TableCell>
               </TableRow>
@@ -361,7 +429,7 @@ export default function AdminTeachers() {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>
@@ -397,6 +465,76 @@ export default function AdminTeachers() {
               helperText={fieldErrors.password}
             />
           )}
+          <FormControl fullWidth>
+            <InputLabel>Assign Classes</InputLabel>
+            <Select
+              multiple
+              value={form.classIds}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((prev) => {
+                  const validSubs = prev.subjectIds.filter((sid) => {
+                    const sub = allSubjects.find((s) => (s._id || s) === sid);
+                    const cId = sub?.classId?._id || sub?.classId;
+                    return val.includes(cId);
+                  });
+                  return { ...prev, classIds: val, subjectIds: validSubs };
+                });
+              }}
+              input={<OutlinedInput label="Assign Classes" />}
+              renderValue={(selected) =>
+                selected
+                  .map((id) => {
+                    const c = classes.find((cl) => cl._id === id);
+                    return c ? `${c.grade} ${c.section || ""}`.trim() : id;
+                  })
+                  .join(", ")
+              }
+            >
+              {classes.map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  <Checkbox checked={form.classIds.includes(c._id)} />
+                  <ListItemText
+                    primary={`Class ${c.grade} ${c.section || ""}`}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth disabled={form.classIds.length === 0}>
+            <InputLabel>Assign Subjects</InputLabel>
+            <Select
+              multiple
+              value={form.subjectIds}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, subjectIds: e.target.value }))
+              }
+              input={<OutlinedInput label="Assign Subjects" />}
+              renderValue={(selected) =>
+                selected
+                  .map((id) => {
+                    const s = allSubjects.find((sub) => sub._id === id);
+                    return s ? s.name : id;
+                  })
+                  .join(", ")
+              }
+            >
+              {availableSubjects.map((s) => {
+                const cls = classes.find(
+                  (c) => c._id === (s.classId?._id || s.classId),
+                );
+                const label = cls
+                  ? `${s.name} (${cls.grade} ${cls.section || ""})`
+                  : s.name;
+                return (
+                  <MenuItem key={s._id} value={s._id}>
+                    <Checkbox checked={form.subjectIds.includes(s._id)} />
+                    <ListItemText primary={label} />
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
@@ -534,6 +672,42 @@ export default function AdminTeachers() {
                   <Typography
                     sx={{ fontSize: "13px", fontWeight: 500, mb: 0.5 }}
                   >
+                    Classes
+                  </Typography>
+                  {detail.classIds?.length > 0 ? (
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {detail.classIds.map((c) => (
+                        <Chip
+                          key={c._id}
+                          label={`${c.grade} ${c.section || ""}`}
+                          size="small"
+                        />
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      No classes assigned
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "start", gap: 1.5 }}>
+                <MenuBookOutlinedIcon
+                  sx={{
+                    fontSize: 16,
+                    color: "var(--color-text-secondary)",
+                    mt: 0.25,
+                  }}
+                />
+                <Box>
+                  <Typography
+                    sx={{ fontSize: "13px", fontWeight: 500, mb: 0.5 }}
+                  >
                     Subjects
                   </Typography>
                   {detail.subjectIds?.length > 0 ? (
@@ -609,7 +783,7 @@ export default function AdminTeachers() {
         <DialogContent>
           {uploading && <LinearProgress sx={{ mb: 2 }} />}
 
-          {!uploadResult && (
+          {!uploadResult && !uploading && (
             <>
               <Typography
                 sx={{
@@ -701,8 +875,10 @@ export default function AdminTeachers() {
                   >
                     {uploadResult.errors.map((err, i) => (
                       <Typography key={i} sx={{ fontSize: "12px", mb: 0.5 }}>
-                        {err.row > 0 ? `Row ${err.row}: ` : ""}
-                        {err.error}
+                        {err.row > 0 ? <strong>Row {err.row}</strong> : ""}
+                        {err.email ? ` (${err.email})` : ""}
+                        {err.row > 0 || err.email ? ": " : ""}
+                        {err.error || err.reason || "Unknown error"}
                       </Typography>
                     ))}
                   </Box>

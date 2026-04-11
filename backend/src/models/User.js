@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class" },
+    classIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
     section: String,
     rollNumber: String,
     subjectIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subject" }],

@@ -8,6 +8,7 @@ export const attendanceApi = apiSlice.injectEndpoints({
     }),
     getAttendance: build.query({
       query: (params) => ({ url: "/attendance", params }),
+      transformResponse: (res) => (Array.isArray(res) ? (res[0] ?? null) : res),
       providesTags: ["Attendance"],
     }),
     getStudentAttendance: build.query({

@@ -14,12 +14,333 @@ const Submission = require("./models/Submission");
 const Chapter = require("./models/Chapter");
 const Topic = require("./models/Topic");
 const Notice = require("./models/Notice");
+const StudentNote = require("./models/StudentNote");
 
+/* ── helpers ─────────────────────────────────────────────────── */
+const rng = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const rngInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+function pastWeekdays(count) {
+  const dates = [];
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  while (dates.length < count) {
+    d.setDate(d.getDate() - 1);
+    const dow = d.getDay();
+    if (dow > 0 && dow < 6) dates.push(new Date(d));
+  }
+  return dates.reverse();
+}
+
+/* ── static data ─────────────────────────────────────────────── */
+const SCHOOLS = [
+  {
+    name: "Shree Janata Secondary School",
+    address: "Ward 5, Kathmandu",
+    phone: "01-4100001",
+  },
+  {
+    name: "Saraswati Basic School",
+    address: "Ward 3, Lalitpur",
+    phone: "01-4100002",
+  },
+  {
+    name: "Nepal Rastriya Secondary School",
+    address: "Ward 7, Bhaktapur",
+    phone: "01-4100003",
+  },
+  {
+    name: "Budhanilkantha Higher Secondary",
+    address: "Ward 12, Kathmandu",
+    phone: "01-4100004",
+  },
+  {
+    name: "Pashupati Secondary School",
+    address: "Ward 9, Kathmandu",
+    phone: "01-4100005",
+  },
+  {
+    name: "Gyanodaya Boarding School",
+    address: "Ward 2, Lalitpur",
+    phone: "01-4100006",
+  },
+  {
+    name: "Himalayan Model School",
+    address: "Ward 6, Bhaktapur",
+    phone: "01-4100007",
+  },
+  {
+    name: "Siddhartha Basic School",
+    address: "Ward 4, Kathmandu",
+    phone: "01-4100008",
+  },
+  {
+    name: "Tribhuvan Secondary School",
+    address: "Ward 8, Lalitpur",
+    phone: "01-4100009",
+  },
+  {
+    name: "Mahendra Higher Secondary",
+    address: "Ward 11, Kathmandu",
+    phone: "01-4100010",
+  },
+];
+
+const PRINCIPAL_NAMES = [
+  "Ram Bahadur Thapa",
+  "Sita Kumari Shrestha",
+  "Hari Prasad Adhikari",
+  "Kamala Devi Bista",
+  "Krishna Bahadur Rai",
+  "Gita Kumari Tamang",
+  "Bishnu Prasad Pandey",
+  "Sarita Devi Gurung",
+  "Gopal Bahadur K.C.",
+  "Meena Kumari Lama",
+];
+
+const TEACHER_FIRST = [
+  "Ram",
+  "Shyam",
+  "Hari",
+  "Sita",
+  "Gita",
+  "Sunita",
+  "Kamala",
+  "Binod",
+  "Prakash",
+  "Raju",
+  "Puja",
+  "Anita",
+  "Bikash",
+  "Deepak",
+  "Sabina",
+  "Nabin",
+  "Mina",
+  "Sarita",
+  "Bishnu",
+  "Laxmi",
+];
+const TEACHER_LAST = [
+  "Karki",
+  "Maharjan",
+  "Ghimire",
+  "Bista",
+  "Shrestha",
+  "Tamang",
+  "Gurung",
+  "Rai",
+  "Thapa",
+  "Pandey",
+  "Adhikari",
+  "Lama",
+];
+
+const STUDENT_FIRST = [
+  "Aarav",
+  "Aayush",
+  "Abishek",
+  "Anish",
+  "Arun",
+  "Arjun",
+  "Bibek",
+  "Binaya",
+  "Bipin",
+  "Bishal",
+  "Dipak",
+  "Dipesh",
+  "Gaurav",
+  "Hari",
+  "Ishwor",
+  "Kiran",
+  "Manish",
+  "Nabin",
+  "Niraj",
+  "Pawan",
+  "Prabin",
+  "Rajesh",
+  "Rajan",
+  "Rohan",
+  "Roshan",
+  "Sachin",
+  "Samir",
+  "Sanjay",
+  "Santosh",
+  "Saroj",
+  "Sujan",
+  "Sunil",
+  "Sushil",
+  "Ujjwal",
+  "Yogesh",
+  "Aakriti",
+  "Anjali",
+  "Asmita",
+  "Binita",
+  "Deepa",
+  "Ganga",
+  "Kabita",
+  "Kritika",
+  "Laxmi",
+  "Manisha",
+  "Nisha",
+  "Priya",
+  "Puja",
+  "Radhika",
+  "Renu",
+  "Reshma",
+  "Sabina",
+  "Sangita",
+  "Sapana",
+  "Sarina",
+  "Sita",
+  "Sunita",
+  "Sushma",
+  "Tulsi",
+  "Uma",
+];
+const STUDENT_LAST = [
+  "Adhikari",
+  "Bhandari",
+  "B.K.",
+  "Chaudhary",
+  "Dahal",
+  "Dhakal",
+  "Dongol",
+  "Gautam",
+  "Ghimire",
+  "Gurung",
+  "Joshi",
+  "K.C.",
+  "Karki",
+  "Khadka",
+  "Koirala",
+  "Lama",
+  "Maharjan",
+  "Magar",
+  "Nepal",
+  "Pandey",
+  "Poudel",
+  "Rai",
+  "Sharma",
+  "Shrestha",
+  "Tamang",
+  "Thapa",
+];
+
+const SUBJECTS_PER_GRADE = {
+  8: ["Science", "Mathematics", "Nepali", "English", "Social Studies"],
+  9: ["Science", "Mathematics", "Nepali", "English", "Social Studies"],
+  10: ["Science", "Mathematics", "Nepali", "English", "Social Studies"],
+};
+const SUBJECT_COLORS = {
+  Science: "#2563eb",
+  Mathematics: "#059669",
+  Nepali: "#7c3aed",
+  English: "#dc2626",
+  "Social Studies": "#d97706",
+};
+
+/* chapter + topic templates per subject */
+const CURRICULUM = {
+  Science: [
+    {
+      ch: "Force and Motion",
+      topics: ["Newton's Laws", "Friction", "Gravity"],
+    },
+    { ch: "Light and Optics", topics: ["Reflection", "Refraction", "Lenses"] },
+    {
+      ch: "Chemical Reactions",
+      topics: ["Acids and Bases", "Oxidation", "Balancing Equations"],
+    },
+    {
+      ch: "Living Organisms",
+      topics: ["Cell Structure", "Photosynthesis", "Respiration"],
+    },
+  ],
+  Mathematics: [
+    {
+      ch: "Algebra",
+      topics: ["Linear Equations", "Quadratic Equations", "Polynomials"],
+    },
+    { ch: "Geometry", topics: ["Triangles", "Circles", "Coordinate Geometry"] },
+    {
+      ch: "Statistics",
+      topics: ["Mean Median Mode", "Probability", "Data Representation"],
+    },
+    {
+      ch: "Trigonometry",
+      topics: ["Ratios", "Heights and Distances", "Identities"],
+    },
+  ],
+  Nepali: [
+    {
+      ch: "Gadya (Prose)",
+      topics: ["Story Comprehension", "Essay Writing", "Letter Writing"],
+    },
+    {
+      ch: "Padya (Poetry)",
+      topics: ["Poem Analysis", "Rhyme Patterns", "Nepali Poets"],
+    },
+    { ch: "Vyakaran (Grammar)", topics: ["Sandhi", "Samas", "Karak"] },
+    {
+      ch: "Sahitya (Literature)",
+      topics: ["Muna Madan", "Nepali Drama", "Modern Literature"],
+    },
+  ],
+  English: [
+    {
+      ch: "Reading Comprehension",
+      topics: ["Passage Analysis", "Vocabulary Building", "Inference"],
+    },
+    {
+      ch: "Grammar",
+      topics: ["Tenses", "Active Passive Voice", "Reported Speech"],
+    },
+    {
+      ch: "Writing Skills",
+      topics: ["Essay Writing", "Paragraph Writing", "Letter Format"],
+    },
+    { ch: "Literature", topics: ["Short Stories", "Poetry Analysis", "Drama"] },
+  ],
+  "Social Studies": [
+    {
+      ch: "Our Country Nepal",
+      topics: ["Geography", "Administrative Divisions", "Natural Resources"],
+    },
+    {
+      ch: "History",
+      topics: ["Unification of Nepal", "Rana Period", "Democracy Movement"],
+    },
+    {
+      ch: "Civics",
+      topics: ["Constitution", "Fundamental Rights", "Government Structure"],
+    },
+    {
+      ch: "Economics",
+      topics: ["National Income", "Taxation", "Development Planning"],
+    },
+  ],
+};
+
+const NOTICE_TITLES = [
+  "Annual Sports Day Announcement",
+  "Parent-Teacher Meeting Schedule",
+  "Examination Schedule Published",
+  "Holiday Notice - Dashain",
+  "Library New Books Arrival",
+  "Extra Class Schedule",
+  "School Bus Route Change",
+  "Annual Day Celebration",
+  "Mid-term Results Available",
+  "Health Check-up Camp",
+];
+
+/* ================================================================== */
 async function seed() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log("Connected to MongoDB");
 
-  // Clear existing data
+  /* ── 0. Wipe ──────────────────────────────────────── */
   await Promise.all([
     User.deleteMany(),
     School.deleteMany(),
@@ -31,282 +352,460 @@ async function seed() {
     Chapter.deleteMany(),
     Topic.deleteMany(),
     Notice.deleteMany(),
+    StudentNote.deleteMany(),
   ]);
+  // Drop stale indexes that may exist from old schema versions
+  try {
+    await mongoose.connection.collection("attendances").dropIndexes();
+  } catch (_) {}
+  try {
+    await mongoose.connection.collection("submissions").dropIndexes();
+  } catch (_) {}
+  // Re-sync current indexes
+  await Attendance.syncIndexes();
+  await Submission.syncIndexes();
+  console.log("Cleared all collections + synced indexes");
 
-  // -- Super Admin --
+  /* ── 1. Super Admin ───────────────────────────────── */
   const superAdmin = await User.create({
     name: "Municipality Admin",
     email: "admin@municipality.gov.np",
     password: "password123",
     role: "SUPER_ADMIN",
   });
+  console.log("Super admin created");
 
-  // -- School --
-  const school = await School.create({
-    municipalityId: superAdmin._id,
-    name: "Shree Janata Secondary School",
-    address: "Ward 5, Kathmandu",
-    phone: "01-4123456",
-  });
+  /* ── 2. Notices from municipality ─────────────────── */
+  await Notice.insertMany([
+    {
+      authorId: superAdmin._id,
+      title: "Welcome to EduNepal Platform",
+      body: "All schools are now registered on the digital platform. Principals, please complete your school profiles.",
+      from: "municipality",
+      category: "general",
+      priority: "high",
+    },
+    {
+      authorId: superAdmin._id,
+      title: "Teacher Training Workshop",
+      body: "A two-day ICT training workshop will be held on Mangsir 15-16, 2083. All computer teachers must attend.",
+      from: "municipality",
+      category: "event",
+      priority: "medium",
+    },
+  ]);
 
-  // -- Principal --
-  const principal = await User.create({
-    name: "Ram Bahadur Thapa",
-    email: "principal@janata.edu.np",
-    password: "password123",
-    role: "SCHOOL_ADMIN",
-    schoolId: school._id,
-  });
-  school.principalId = principal._id;
-  await school.save();
-
-  // -- Classes --
-  const class10A = await Class.create({ schoolId: school._id, grade: 10, section: "A", academicYear: "2083" });
-  const class10B = await Class.create({ schoolId: school._id, grade: 10, section: "B", academicYear: "2083" });
-  const class9A = await Class.create({ schoolId: school._id, grade: 9, section: "A", academicYear: "2083" });
-  const class9B = await Class.create({ schoolId: school._id, grade: 9, section: "B", academicYear: "2083" });
-  const class8A = await Class.create({ schoolId: school._id, grade: 8, section: "A", academicYear: "2083" });
-
-  const allClasses = [class10A, class10B, class9A, class9B, class8A];
-
-  // -- Teachers --
-  const teacherRam = await User.create({
-    name: "Ram Bahadur Karki",
-    email: "ram.karki@janata.edu.np",
-    password: "password123",
-    role: "TEACHER",
-    schoolId: school._id,
-    phone: "9841000001",
-  });
-  const teacherSunita = await User.create({
-    name: "Sunita Maharjan",
-    email: "sunita.maharjan@janata.edu.np",
-    password: "password123",
-    role: "TEACHER",
-    schoolId: school._id,
-    phone: "9841000002",
-  });
-  const teacherHari = await User.create({
-    name: "Hari Ghimire",
-    email: "hari.ghimire@janata.edu.np",
-    password: "password123",
-    role: "TEACHER",
-    schoolId: school._id,
-    phone: "9841000003",
-  });
-  const teacherKamala = await User.create({
-    name: "Kamala Bista",
-    email: "kamala.bista@janata.edu.np",
-    password: "password123",
-    role: "TEACHER",
-    schoolId: school._id,
-    phone: "9841000004",
-  });
-
-  const allTeachers = [teacherRam, teacherSunita, teacherHari, teacherKamala];
-
-  // -- Subjects (per class) --
-  const sci10A = await Subject.create({ schoolId: school._id, classId: class10A._id, name: "Science", teacherId: teacherRam._id, color: "#2563eb" });
-  const math10A = await Subject.create({ schoolId: school._id, classId: class10A._id, name: "Mathematics", teacherId: teacherSunita._id, color: "#059669" });
-  const nep10A = await Subject.create({ schoolId: school._id, classId: class10A._id, name: "Nepali", teacherId: teacherHari._id, color: "#7c3aed" });
-  const ss10A = await Subject.create({ schoolId: school._id, classId: class10A._id, name: "Social Studies", teacherId: teacherKamala._id, color: "#d97706" });
-  const eng10A = await Subject.create({ schoolId: school._id, classId: class10A._id, name: "English", teacherId: teacherRam._id, color: "#dc2626" });
-
-  const sci10B = await Subject.create({ schoolId: school._id, classId: class10B._id, name: "Science", teacherId: teacherRam._id, color: "#2563eb" });
-  const math10B = await Subject.create({ schoolId: school._id, classId: class10B._id, name: "Mathematics", teacherId: teacherSunita._id, color: "#059669" });
-  const nep10B = await Subject.create({ schoolId: school._id, classId: class10B._id, name: "Nepali", teacherId: teacherHari._id, color: "#7c3aed" });
-  const ss10B = await Subject.create({ schoolId: school._id, classId: class10B._id, name: "Social Studies", teacherId: teacherKamala._id, color: "#d97706" });
-
-  const sci9A = await Subject.create({ schoolId: school._id, classId: class9A._id, name: "Science", teacherId: teacherRam._id, color: "#2563eb" });
-  const math9A = await Subject.create({ schoolId: school._id, classId: class9A._id, name: "Mathematics", teacherId: teacherSunita._id, color: "#059669" });
-  const nep9A = await Subject.create({ schoolId: school._id, classId: class9A._id, name: "Nepali", teacherId: teacherHari._id, color: "#7c3aed" });
-  const ss9A = await Subject.create({ schoolId: school._id, classId: class9A._id, name: "Social Studies", teacherId: teacherKamala._id, color: "#d97706" });
-
-  const sci9B = await Subject.create({ schoolId: school._id, classId: class9B._id, name: "Science", teacherId: teacherRam._id, color: "#2563eb" });
-  const math9B = await Subject.create({ schoolId: school._id, classId: class9B._id, name: "Mathematics", teacherId: teacherSunita._id, color: "#059669" });
-  const nep9B = await Subject.create({ schoolId: school._id, classId: class9B._id, name: "Nepali", teacherId: teacherHari._id, color: "#7c3aed" });
-
-  const sci8A = await Subject.create({ schoolId: school._id, classId: class8A._id, name: "Science", teacherId: teacherRam._id, color: "#2563eb" });
-  const math8A = await Subject.create({ schoolId: school._id, classId: class8A._id, name: "Mathematics", teacherId: teacherSunita._id, color: "#059669" });
-  const nep8A = await Subject.create({ schoolId: school._id, classId: class8A._id, name: "Nepali", teacherId: teacherHari._id, color: "#7c3aed" });
-
-  teacherRam.subjectIds = [sci10A._id, eng10A._id, sci10B._id, sci9A._id, sci9B._id, sci8A._id];
-  teacherSunita.subjectIds = [math10A._id, math10B._id, math9A._id, math9B._id, math8A._id];
-  teacherHari.subjectIds = [nep10A._id, nep10B._id, nep9A._id, nep9B._id, nep8A._id];
-  teacherKamala.subjectIds = [ss10A._id, ss10B._id, ss9A._id];
-  await Promise.all(allTeachers.map((t) => t.save()));
-
-  // -- Students --
-  const studentsByClass = {};
-  const classStudentData = [
-    { cls: class10A, count: 30, prefix: "10a" },
-    { cls: class10B, count: 30, prefix: "10b" },
-    { cls: class9A, count: 33, prefix: "9a" },
-    { cls: class9B, count: 32, prefix: "9b" },
-    { cls: class8A, count: 28, prefix: "8a" },
-  ];
-
-  const firstNames = [
-    "Aarav", "Bibek", "Chhiring", "Deepa", "Ekta", "Firoj", "Gita", "Hari",
-    "Ishwori", "Jeevan", "Kabita", "Laxmi", "Mohan", "Nisha", "Om",
-    "Puja", "Rajesh", "Sita", "Tara", "Ujjwal", "Binod", "Sarita",
-    "Dinesh", "Anita", "Suresh", "Mina", "Raju", "Kamala", "Bikash", "Suman",
-    "Ramesh", "Durga", "Gopal",
-  ];
-  const lastNames = [
-    "Poudel", "Gurung", "Sherpa", "Tamang", "Rai", "Khan", "Bhattarai",
-    "Adhikari", "Magar", "Shrestha", "Thapa", "Karki", "Bhandari", "Ghimire",
-    "Maharjan", "Basnet", "Chhetri", "Lama", "Sapkota", "Dahal",
-  ];
-
-  for (const { cls, count, prefix } of classStudentData) {
-    const students = [];
-    for (let i = 0; i < count; i++) {
-      const fn = firstNames[i % firstNames.length];
-      const ln = lastNames[(i + cls.grade) % lastNames.length];
-      const student = await User.create({
-        name: fn + " " + ln,
-        email: prefix + ".student" + (i + 1) + "@janata.edu.np",
-        password: "password123",
-        role: "STUDENT",
-        schoolId: school._id,
-        classId: cls._id,
-        rollNumber: String(i + 1).padStart(2, "0"),
-      });
-      students.push(student);
-    }
-    studentsByClass[cls._id.toString()] = students;
+  /* ── 3. Schools + Principals ──────────────────────── */
+  const schoolDocs = [];
+  const principalDocs = [];
+  for (let si = 0; si < 10; si++) {
+    const s = SCHOOLS[si];
+    const school = await School.create({
+      municipalityId: superAdmin._id,
+      name: s.name,
+      address: s.address,
+      phone: s.phone,
+      province: "Bagmati",
+      district: "Kathmandu",
+      municipality: "Kathmandu Metropolitan City",
+      ward: String(rngInt(1, 32)),
+      academicYear: "2083",
+      schoolLevel: "Secondary (1-12)",
+      managementType: si % 2 === 0 ? "Community" : "Institutional",
+    });
+    const slug = s.name
+      .toLowerCase()
+      .replace(/[^a-z]+/g, "")
+      .slice(0, 8);
+    const principal = await User.create({
+      name: PRINCIPAL_NAMES[si],
+      email: "principal@" + slug + ".edu.np",
+      password: "password123",
+      role: "SCHOOL_ADMIN",
+      schoolId: school._id,
+      phone: "984" + String(1000000 + si),
+    });
+    school.principalId = principal._id;
+    await school.save();
+    schoolDocs.push(school);
+    principalDocs.push(principal);
   }
-  console.log("Created students for all classes");
+  console.log("10 schools + principals created");
 
-  // -- Attendance (last 30 days for each class) --
-  const today = new Date();
-  for (const cls of allClasses) {
-    const students = studentsByClass[cls._id.toString()];
-    for (let d = 0; d < 30; d++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - d);
-      if (date.getDay() === 6) continue;
+  /* ── 4. Per-school: classes, teachers, subjects, students, content, attendance, assignments ─── */
+  const past25 = pastWeekdays(25); // last 25 working days
+  let totalTeachers = 0,
+    totalStudents = 0,
+    totalAttendance = 0,
+    totalChapters = 0,
+    totalTopics = 0,
+    totalAssignments = 0,
+    totalSubmissions = 0;
 
-      const records = students.map((s) => ({
-        studentId: s._id,
-        status: Math.random() < 0.85 ? "P" : "A",
-      }));
+  for (let si = 0; si < 10; si++) {
+    const school = schoolDocs[si];
+    const principal = principalDocs[si];
+    const sid = school._id;
+    console.log(`\n--- School ${si + 1}: ${school.name} ---`);
 
-      try {
-        await Attendance.create({
-          schoolId: school._id,
+    /* 4a. Classes: grades 8,9,10 sections A,B */
+    const classDocs = [];
+    for (const grade of [8, 9, 10]) {
+      for (const section of ["A", "B"]) {
+        classDocs.push(
+          await Class.create({
+            schoolId: sid,
+            grade,
+            section,
+            academicYear: "2083",
+          }),
+        );
+      }
+    }
+    console.log("  6 classes created (grades 8-10 × A,B)");
+
+    /* 4b. 10 Teachers – each gets ~3 subjects across classes */
+    const teacherDocs = [];
+    const usedNames = new Set();
+    for (let ti = 0; ti < 10; ti++) {
+      let first, last, fullName;
+      do {
+        first = TEACHER_FIRST[rngInt(0, TEACHER_FIRST.length - 1)];
+        last = TEACHER_LAST[rngInt(0, TEACHER_LAST.length - 1)];
+        fullName = first + " " + last;
+      } while (usedNames.has(fullName));
+      usedNames.add(fullName);
+
+      const slug = school.name
+        .toLowerCase()
+        .replace(/[^a-z]+/g, "")
+        .slice(0, 6);
+      teacherDocs.push(
+        await User.create({
+          name: fullName,
+          email:
+            first.toLowerCase() +
+            "." +
+            last.toLowerCase() +
+            "." +
+            si +
+            "@" +
+            slug +
+            ".edu.np",
+          password: "password123",
+          role: "TEACHER",
+          schoolId: sid,
+          phone: "98" + String(41000000 + si * 100 + ti),
+        }),
+      );
+    }
+    totalTeachers += 10;
+    console.log("  10 teachers created");
+
+    /* 4c. Subjects for every class — assign teachers round-robin */
+    const subjectDocs = []; // flat list
+    const classSubjectMap = new Map(); // classId → [subjectDoc]
+    const teacherClassMap = new Map(); // teacherId → Set<classId>
+    const teacherSubjectMap = new Map(); // teacherId → Set<subjectId>
+
+    let tIdx = 0; // round-robin teacher index
+    for (const cls of classDocs) {
+      const subNames = SUBJECTS_PER_GRADE[cls.grade];
+      const classSubs = [];
+      for (const subName of subNames) {
+        const teacher = teacherDocs[tIdx % teacherDocs.length];
+        tIdx++;
+        const sub = await Subject.create({
+          schoolId: sid,
           classId: cls._id,
-          teacherId: teacherRam._id,
+          name: subName,
+          teacherId: teacher._id,
+          color: SUBJECT_COLORS[subName] || "#666",
+        });
+        classSubs.push(sub);
+        subjectDocs.push(sub);
+
+        // track
+        if (!teacherClassMap.has(teacher._id.toString()))
+          teacherClassMap.set(teacher._id.toString(), new Set());
+        teacherClassMap.get(teacher._id.toString()).add(cls._id.toString());
+
+        if (!teacherSubjectMap.has(teacher._id.toString()))
+          teacherSubjectMap.set(teacher._id.toString(), new Set());
+        teacherSubjectMap.get(teacher._id.toString()).add(sub._id.toString());
+      }
+      classSubjectMap.set(cls._id.toString(), classSubs);
+    }
+    console.log(`  ${subjectDocs.length} subjects assigned`);
+
+    /* update teacher classIds and subjectIds */
+    for (const t of teacherDocs) {
+      const cSet = teacherClassMap.get(t._id.toString());
+      const sSet = teacherSubjectMap.get(t._id.toString());
+      if (cSet || sSet) {
+        t.classIds = cSet
+          ? [...cSet].map((id) => new mongoose.Types.ObjectId(id))
+          : [];
+        t.subjectIds = sSet
+          ? [...sSet].map((id) => new mongoose.Types.ObjectId(id))
+          : [];
+        await t.save();
+      }
+    }
+
+    /* 4d. 20 Students per class — shared across all subjects in that class */
+    const classStudentMap = new Map(); // classId → [studentDoc]
+    const usedStudentNames = new Set();
+    for (const cls of classDocs) {
+      const studs = [];
+      for (let sti = 1; sti <= 20; sti++) {
+        let first, last, full;
+        do {
+          first = STUDENT_FIRST[rngInt(0, STUDENT_FIRST.length - 1)];
+          last = STUDENT_LAST[rngInt(0, STUDENT_LAST.length - 1)];
+          full = first + " " + last;
+        } while (usedStudentNames.has(full + cls._id.toString()));
+        usedStudentNames.add(full + cls._id.toString());
+
+        const slug = school.name
+          .toLowerCase()
+          .replace(/[^a-z]+/g, "")
+          .slice(0, 6);
+        studs.push(
+          await User.create({
+            name: full,
+            email:
+              first.toLowerCase() +
+              sti +
+              ".g" +
+              cls.grade +
+              cls.section.toLowerCase() +
+              "." +
+              si +
+              "@" +
+              slug +
+              ".edu.np",
+            password: "password123",
+            role: "STUDENT",
+            schoolId: sid,
+            classId: cls._id,
+            section: cls.section,
+            rollNumber: String(sti),
+            phone: "98" + String(10000000 + si * 10000 + cls.grade * 100 + sti),
+          }),
+        );
+      }
+      classStudentMap.set(cls._id.toString(), studs);
+      totalStudents += 20;
+    }
+    console.log(`  ${classDocs.length * 20} students created`);
+
+    /* 4e. Attendance — one record per class per weekday for past 25 days */
+    const attendanceBulk = [];
+    for (const cls of classDocs) {
+      const studs = classStudentMap.get(cls._id.toString());
+      // pick the first teacher assigned to this class
+      const classTeacher = classSubjectMap.get(cls._id.toString())[0].teacherId;
+
+      for (const date of past25) {
+        const records = studs.map((s) => ({
+          studentId: s._id,
+          status: Math.random() < 0.85 ? "P" : "A", // ~85% present
+        }));
+        attendanceBulk.push({
+          schoolId: sid,
+          classId: cls._id,
+          teacherId: classTeacher,
           date,
           records,
         });
-      } catch (e) {
-        // Skip duplicates
       }
     }
-  }
-  console.log("Created attendance records");
+    await Attendance.insertMany(attendanceBulk);
+    totalAttendance += attendanceBulk.length;
+    console.log(
+      `  ${attendanceBulk.length} attendance records (6 classes × 25 days)`,
+    );
 
-  // -- Assignments --
-  const subjectsForAssignments = [
-    { subject: sci10A, cls: class10A, teacher: teacherRam },
-    { subject: math10A, cls: class10A, teacher: teacherSunita },
-    { subject: nep10A, cls: class10A, teacher: teacherHari },
-    { subject: sci9A, cls: class9A, teacher: teacherRam },
-    { subject: math9A, cls: class9A, teacher: teacherSunita },
-    { subject: sci10B, cls: class10B, teacher: teacherRam },
-  ];
+    /* 4f. Chapters + Topics per subject */
+    const chapterBulk = [];
+    const topicBulk = []; // will insert after chapters so we have _ids
+    for (const sub of subjectDocs) {
+      const curriculum = CURRICULUM[sub.name] || CURRICULUM["Science"];
+      const gradeLabel =
+        classDocs.find((c) => c._id.toString() === sub.classId.toString())
+          ?.grade || 10;
 
-  const assignmentTitles = [
-    "Chapter 1 Exercise", "Mid-term Practice Set", "Lab Report Submission",
-    "Essay Writing", "Problem Set 3", "Project Proposal",
-  ];
+      for (let ci = 0; ci < curriculum.length; ci++) {
+        const tmpl = curriculum[ci];
+        const chapterObj = {
+          subjectId: sub._id,
+          schoolId: sid,
+          title: `${tmpl.ch} (Grade ${gradeLabel})`,
+          description: `${tmpl.ch} chapter for Grade ${gradeLabel} ${sub.name}`,
+          order: ci + 1,
+          status: ci < 3 ? "published" : "draft",
+        };
+        chapterBulk.push(chapterObj);
+      }
+    }
+    const chapters = await Chapter.insertMany(chapterBulk);
+    totalChapters += chapters.length;
 
-  const allAssignments = [];
-  for (let i = 0; i < subjectsForAssignments.length; i++) {
-    const { subject, cls, teacher } = subjectsForAssignments[i];
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + (i < 3 ? -5 : 7));
-    const assignment = await Assignment.create({
-      subjectId: subject._id,
-      schoolId: school._id,
-      classId: cls._id,
-      teacherId: teacher._id,
-      title: assignmentTitles[i],
-      description: "Complete " + assignmentTitles[i] + " for " + subject.name,
-      dueDate,
-      maxMarks: 100,
-      status: "published",
-    });
-    allAssignments.push({ assignment, cls });
-  }
+    // now topics
+    let chIdx = 0;
+    for (const sub of subjectDocs) {
+      const curriculum = CURRICULUM[sub.name] || CURRICULUM["Science"];
+      for (let ci = 0; ci < curriculum.length; ci++) {
+        const ch = chapters[chIdx++];
+        const tmpl = curriculum[ci];
+        for (let ti = 0; ti < tmpl.topics.length; ti++) {
+          topicBulk.push({
+            chapterId: ch._id,
+            title: tmpl.topics[ti],
+            type: rng(["note", "video", "pdf"]),
+            content: `Detailed notes on ${tmpl.topics[ti]} for ${sub.name}.`,
+            order: ti + 1,
+          });
+        }
+      }
+    }
+    await Topic.insertMany(topicBulk);
+    totalTopics += topicBulk.length;
+    console.log(`  ${chapters.length} chapters, ${topicBulk.length} topics`);
 
-  for (const { assignment, cls } of allAssignments) {
-    if (assignment.dueDate < today) {
-      const students = studentsByClass[cls._id.toString()];
-      const submitting = students.slice(0, Math.floor(students.length * 0.75));
-      for (const student of submitting) {
-        const marks = Math.floor(Math.random() * 40) + 60;
-        await Submission.create({
-          assignmentId: assignment._id,
-          studentId: student._id,
-          textContent: "Submitted work",
-          marks: Math.random() < 0.5 ? marks : undefined,
-          status: Math.random() < 0.5 ? "graded" : "submitted",
+    /* 4g. Assignments + Submissions per subject */
+    const assignmentBulk = [];
+    for (const sub of subjectDocs) {
+      const cls = classDocs.find(
+        (c) => c._id.toString() === sub.classId.toString(),
+      );
+      const curriculum = CURRICULUM[sub.name] || CURRICULUM["Science"];
+      // 2 assignments per subject
+      for (let ai = 0; ai < 2; ai++) {
+        const due = new Date(past25[rngInt(10, 24)]);
+        assignmentBulk.push({
+          subjectId: sub._id,
+          schoolId: sid,
+          classId: sub.classId,
+          teacherId: sub.teacherId,
+          title: `${curriculum[ai]?.ch || "Chapter"} — Practice Assignment ${ai + 1}`,
+          description: `Complete the exercises related to ${curriculum[ai]?.ch || "the chapter"}.`,
+          dueDate: due,
+          maxMarks: rng([20, 25, 50]),
+          allowLate: ai === 0,
+          status: "published",
         });
       }
     }
-  }
-  console.log("Created assignments and submissions");
+    const assignments = await Assignment.insertMany(assignmentBulk);
+    totalAssignments += assignments.length;
 
-  // -- Chapters & Topics --
-  const subjectsForContent = [
-    { subject: sci10A, chapters: ["Force and Motion", "Energy", "Light", "Electricity", "Magnetism"] },
-    { subject: math10A, chapters: ["Sets", "Arithmetic", "Algebra", "Geometry", "Trigonometry"] },
-    { subject: nep10A, chapters: ["Gadya Khand", "Padya Khand", "Vyakaran", "Nibandha Lekhan"] },
-    { subject: sci9A, chapters: ["Matter and Its States", "Force", "Simple Machines"] },
-    { subject: math9A, chapters: ["Number System", "Ratio and Proportion", "Linear Equations"] },
-    { subject: ss10A, chapters: ["History of Nepal", "Geography", "Civics", "Economics"] },
-  ];
-
-  for (const { subject, chapters } of subjectsForContent) {
-    for (let i = 0; i < chapters.length; i++) {
-      const statuses = ["published", "published", "published", "draft", "not_started"];
-      const chapter = await Chapter.create({
-        subjectId: subject._id,
-        schoolId: school._id,
-        title: chapters[i],
-        order: i + 1,
-        status: statuses[i] || "not_started",
-      });
-      if (chapter.status === "published") {
-        await Topic.create({ chapterId: chapter._id, title: chapters[i] + " - Notes", type: "note", content: "Detailed notes for " + chapters[i], order: 1 });
-        await Topic.create({ chapterId: chapter._id, title: chapters[i] + " - Video Lecture", type: "video", fileUrl: "https://example.com/video.mp4", order: 2 });
+    // Submissions: ~80% of students submit each assignment
+    const submissionBulk = [];
+    for (const asn of assignments) {
+      const studs = classStudentMap.get(asn.classId.toString());
+      if (!studs) continue;
+      for (const s of studs) {
+        if (Math.random() < 0.2) continue; // 20% miss
+        const submitted = new Date(asn.dueDate);
+        submitted.setDate(submitted.getDate() - rngInt(0, 3));
+        const late = submitted > asn.dueDate;
+        const graded = Math.random() < 0.6;
+        submissionBulk.push({
+          assignmentId: asn._id,
+          studentId: s._id,
+          textContent: `My solution for ${asn.title}`,
+          submittedAt: submitted,
+          late,
+          marks: graded
+            ? rngInt(Math.floor(asn.maxMarks * 0.4), asn.maxMarks)
+            : undefined,
+          status: graded ? "graded" : "submitted",
+          feedback: graded
+            ? rng([
+                "Good work!",
+                "Needs improvement",
+                "Excellent effort",
+                "Review your answers",
+                "Well done",
+              ])
+            : undefined,
+        });
       }
     }
+    await Submission.insertMany(submissionBulk);
+    totalSubmissions += submissionBulk.length;
+    console.log(
+      `  ${assignments.length} assignments, ${submissionBulk.length} submissions`,
+    );
+
+    /* 4h. School-level notices from principal */
+    const schoolNotices = NOTICE_TITLES.slice(0, 5).map((t, i) => ({
+      schoolId: sid,
+      authorId: principal._id,
+      title: t,
+      body: `Details regarding ${t.toLowerCase()} for ${school.name}. Please check the schedule and plan accordingly.`,
+      from: "school",
+      category: rng(["general", "event", "holiday", "exam_schedule"]),
+      priority: rng(["low", "medium", "high"]),
+    }));
+    await Notice.insertMany(schoolNotices);
+
+    /* 4i. Student notes from teachers */
+    const noteBulk = [];
+    for (const cls of classDocs) {
+      const studs = classStudentMap.get(cls._id.toString());
+      const teacher = teacherDocs[0]; // class teacher
+      // Notes for a few students
+      for (let ni = 0; ni < 3; ni++) {
+        noteBulk.push({
+          studentId: studs[ni]._id,
+          teacherId: teacher._id,
+          content: rng([
+            "Shows great improvement in recent tests",
+            "Needs to focus more on homework completion",
+            "Very active in class participation",
+            "Attendance is low, parent meeting needed",
+            "Excellent performance in group activities",
+          ]),
+        });
+      }
+    }
+    await StudentNote.insertMany(noteBulk);
+
+    console.log(`  School ${si + 1} complete ✓`);
   }
-  console.log("Created chapters and topics");
 
-  // -- Notices --
-  await Notice.create({ schoolId: school._id, authorId: principal._id, title: "Unit Test Schedule - Baisakh", body: "Unit test for all classes will be held from Baisakh 15-20. Students must bring their hall tickets. Exam starts at 10:00 AM sharp.", from: "school", category: "exam_schedule", targetAudience: "All", priority: "high" });
-  await Notice.create({ schoolId: school._id, authorId: principal._id, title: "Parent-Teacher Meeting", body: "PTM for classes 9 and 10 will be held on Baisakh 25 (Saturday). Parents are requested to attend without fail.", from: "school", category: "event", targetAudience: "Parents", priority: "medium" });
-  await Notice.create({ schoolId: school._id, authorId: principal._id, title: "Holiday Notice - Buddha Jayanti", body: "School will remain closed on Baisakh 29 on the occasion of Buddha Jayanti. Regular classes will resume from Jestha 1.", from: "school", category: "holiday", targetAudience: "All", priority: "low" });
-  await Notice.create({ schoolId: null, authorId: superAdmin._id, title: "Municipality Education Conference", body: "All school principals are invited to attend the annual education conference at the municipality office on Jestha 5.", from: "municipality", category: "event", targetAudience: "Principals", priority: "medium" });
-  console.log("Created notices");
-
-  console.log("\nSeed completed!");
-  console.log("Super Admin:  admin@municipality.gov.np / password123");
-  console.log("Principal:    principal@janata.edu.np / password123");
-  console.log("Teacher (Ram): ram.karki@janata.edu.np / password123");
-  console.log("Student:      10a.student1@janata.edu.np / password123");
-  console.log("Classes: 10A(30), 10B(30), 9A(33), 9B(32), 8A(28) = 153 students");
-  console.log("Teachers: 4, Subjects: 20, Assignments: 6");
+  /* ── Summary ───────────────────────────────────────── */
+  console.log("\n=========== SEED COMPLETE ===========");
+  console.log(`Schools:      10`);
+  console.log(`Principals:   10`);
+  console.log(`Teachers:     ${totalTeachers}`);
+  console.log(`Students:     ${totalStudents}`);
+  console.log(`Attendance:   ${totalAttendance} records`);
+  console.log(`Chapters:     ${totalChapters}`);
+  console.log(`Topics:       ${totalTopics}`);
+  console.log(`Assignments:  ${totalAssignments}`);
+  console.log(`Submissions:  ${totalSubmissions}`);
+  console.log("=====================================");
+  console.log("\nCredentials (all passwords: password123):");
+  console.log("  Super Admin: admin@municipality.gov.np");
+  console.log(
+    "  Principals:  principal@shreejana.edu.np, principal@saraswat.edu.np, ...",
+  );
+  console.log(
+    "  Teachers:    <firstname>.<lastname>.<schoolIdx>@<school>.edu.np",
+  );
+  console.log(
+    "  Students:    <firstname><roll>.g<grade><section>.<schoolIdx>@<school>.edu.np",
+  );
 
   await mongoose.disconnect();
+  process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error(err);
+  console.error("Seed error:", err);
   process.exit(1);
 });

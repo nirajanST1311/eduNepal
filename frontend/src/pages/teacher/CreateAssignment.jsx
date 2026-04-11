@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -35,10 +35,24 @@ export default function CreateAssignment() {
     allowLate: false,
   });
   const [errors, setErrors] = useState({});
-  const { data: classes } = useGetClassesQuery({ schoolId: user?.schoolId });
-  const { data: subjects } = useGetSubjectsQuery(
+  const { data: allClasses } = useGetClassesQuery({ schoolId: user?.schoolId });
+  const classes = useMemo(
+    () =>
+      (allClasses || []).filter((c) =>
+        user?.classIds?.length ? user.classIds.includes(c._id) : true,
+      ),
+    [allClasses, user?.classIds],
+  );
+  const { data: allSubjects } = useGetSubjectsQuery(
     form.classId ? { classId: form.classId } : undefined,
     { skip: !form.classId },
+  );
+  const subjects = useMemo(
+    () =>
+      (allSubjects || []).filter((s) =>
+        user?.subjectIds?.length ? user.subjectIds.includes(s._id) : true,
+      ),
+    [allSubjects, user?.subjectIds],
   );
   const [createAssignment, { isLoading }] = useCreateAssignmentMutation();
 

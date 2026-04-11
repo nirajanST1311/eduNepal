@@ -4,21 +4,38 @@ const Topic = require("../models/Topic");
 exports.getAll = async (req, res) => {
   const filter = {};
   if (req.query.subjectId) filter.subjectId = req.query.subjectId;
+  if (req.query.schoolId) filter.schoolId = req.query.schoolId;
   const chapters = await Chapter.find(filter).sort({ order: 1 });
 
-  const chaptersWithTopics = await Promise.all(
-    chapters.map(async (ch) => {
-      const topics = await Topic.find({ chapterId: ch._id }).sort({ order: 1 });
-      const types = [...new Set(topics.map((t) => t.type))];
-      return {
-        ...ch.toObject(),
-        topicCount: topics.length,
-        contentTypes: types,
-      };
-    }),
-  );
+  // Batch-fetch all topics in one query instead of N+1
+  const chapterIds = chapters.map((ch) => ch._id);
+  const allTopics = await Topic.find({ chapterId: { $in: chapterIds } }).sort({
+    order: 1,
+  });
 
-  res.json(chaptersWithTopics);
+  const topicsByChapter = {};
+  for (const t of allTopics) {
+    const key = t.chapterId.toString();
+    if (!topicsByChapter[key]) topicsByChapter[key] = [];
+    topicsByChapter[key].push(t);
+  }
+
+  const result = chapters.map((ch) => {
+    const topics = topicsByChapter[ch._id.toString()] || [];
+    const types = [...new Set(topics.map((t) => t.type))];
+    return {
+      ...ch.toObject(),
+      topics: topics.map((t) => ({
+        _id: t._id,
+        title: t.title,
+        type: t.type,
+      })),
+      topicCount: topics.length,
+      contentTypes: types,
+    };
+  });
+
+  res.json(result);
 };
 
 exports.getById = async (req, res) => {

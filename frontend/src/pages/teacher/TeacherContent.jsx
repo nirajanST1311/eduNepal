@@ -19,31 +19,36 @@ import ExpandLessOutlinedIcon from "@mui/icons-material/ExpandLessOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
-import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
+import HeadphonesOutlinedIcon from "@mui/icons-material/HeadphonesOutlined";
 import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import TopicOutlinedIcon from "@mui/icons-material/TopicOutlined";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetChaptersQuery } from "@/store/api/chapterApi";
 
-const typeConfig = {
-  notes: {
-    label: "Notes",
-    icon: ArticleOutlinedIcon,
-    color: "var(--color-text-info)",
-  },
-  video: { label: "Video", icon: VideocamOutlinedIcon, color: "#7c3aed" },
-  pdf: {
-    label: "PDF",
-    icon: PictureAsPdfOutlinedIcon,
-    color: "var(--color-text-danger)",
-  },
-  quiz: {
-    label: "Quiz",
-    icon: QuizOutlinedIcon,
-    color: "var(--color-text-warning)",
-  },
+/* ─── config ─── */
+const typeIcon = {
+  note: ArticleOutlinedIcon,
+  video: VideocamOutlinedIcon,
+  pdf: PictureAsPdfOutlinedIcon,
+  audio: HeadphonesOutlinedIcon,
+};
+const typeColor = {
+  note: "#2563eb",
+  video: "#7c3aed",
+  pdf: "#dc2626",
+  audio: "#d97706",
+};
+const typeLabel = {
+  note: "Notes",
+  video: "Video",
+  pdf: "PDF",
+  audio: "Audio",
 };
 
 const statusConfig = {
@@ -64,6 +69,17 @@ const statusConfig = {
   },
 };
 
+function timeAgo(date) {
+  if (!date) return "";
+  const ms = Date.now() - new Date(date).getTime();
+  const days = Math.floor(ms / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? "1 month ago" : `${months} months ago`;
+}
+
 export default function TeacherContent() {
   const { user } = useSelector((s) => s.auth);
   const [classId, setClassId] = useState("");
@@ -72,20 +88,92 @@ export default function TeacherContent() {
   const [expanded, setExpanded] = useState({});
   const navigate = useNavigate();
 
-  const { data: classes, isLoading: loadingClasses } = useGetClassesQuery({
+  const isOverview = !subjectId;
+
+  /* ─── queries ─── */
+  const { data: allClasses, isLoading: loadingClasses } = useGetClassesQuery({
     schoolId: user?.schoolId,
   });
-  const { data: subjects, isLoading: loadingSubjects } = useGetSubjectsQuery(
-    classId ? { classId } : undefined,
-    { skip: !classId },
+  const classes = useMemo(
+    () =>
+      (allClasses || []).filter((c) =>
+        user?.classIds?.length ? user.classIds.includes(c._id) : true,
+      ),
+    [allClasses, user?.classIds],
   );
+
+  // Subjects for class dropdown
+  const { data: dropdownSubjects, isLoading: loadingSubjects } =
+    useGetSubjectsQuery(classId ? { classId } : undefined, {
+      skip: !classId,
+    });
+  const subjects = useMemo(
+    () =>
+      (dropdownSubjects || []).filter((s) =>
+        user?.subjectIds?.length ? user.subjectIds.includes(s._id) : true,
+      ),
+    [dropdownSubjects, user?.subjectIds],
+  );
+
+  // All teacher's subjects (overview)
+  const { data: teacherSubjects, isLoading: loadingTeacherSubs } =
+    useGetSubjectsQuery(user?._id ? { teacherId: user._id } : undefined, {
+      skip: !!subjectId || !user?._id,
+    });
+
+  // Chapters for selected subject
   const { data: chapters, isLoading: loadingChapters } = useGetChaptersQuery(
     subjectId ? { subjectId } : undefined,
     { skip: !subjectId },
   );
 
-  const selectedClass = (classes || []).find((c) => c._id === classId);
-  const selectedSubject = (subjects || []).find((s) => s._id === subjectId);
+  // All chapters for school (overview)
+  const { data: schoolChapters, isLoading: loadingOverview } =
+    useGetChaptersQuery(
+      user?.schoolId ? { schoolId: user.schoolId } : undefined,
+      { skip: !!subjectId || !user?.schoolId },
+    );
+
+  /* ─── overview data ─── */
+  const teacherSubjectIds = useMemo(
+    () => new Set((teacherSubjects || []).map((s) => s._id)),
+    [teacherSubjects],
+  );
+
+  const myChapters = useMemo(
+    () =>
+      (schoolChapters || []).filter((ch) =>
+        teacherSubjectIds.has(ch.subjectId),
+      ),
+    [schoolChapters, teacherSubjectIds],
+  );
+
+  const overallStats = useMemo(
+    () => ({
+      subjects: teacherSubjects?.length || 0,
+      chapters: myChapters.length,
+      published: myChapters.filter((c) => c.status === "published").length,
+      topics: myChapters.reduce((sum, c) => sum + (c.topicCount || 0), 0),
+    }),
+    [teacherSubjects, myChapters],
+  );
+
+  const subjectStats = useMemo(() => {
+    const map = {};
+    for (const ch of myChapters) {
+      if (!map[ch.subjectId])
+        map[ch.subjectId] = { chapters: 0, published: 0, topics: 0 };
+      map[ch.subjectId].chapters++;
+      if (ch.status === "published") map[ch.subjectId].published++;
+      map[ch.subjectId].topics += ch.topicCount || 0;
+    }
+    return map;
+  }, [myChapters]);
+
+  /* ─── subject-mode data ─── */
+
+  const selectedClass = classes.find((c) => c._id === classId);
+  const selectedSubject = subjects.find((s) => s._id === subjectId);
 
   const filtered = useMemo(() => {
     if (!chapters) return [];
@@ -94,15 +182,37 @@ export default function TeacherContent() {
     return chapters.filter((ch) => ch.title.toLowerCase().includes(q));
   }, [chapters, search]);
 
-  const published = (chapters || []).filter(
+  const pubCount = (chapters || []).filter(
     (c) => c.status === "published",
   ).length;
-  const drafts = (chapters || []).filter((c) => c.status === "draft").length;
-  const total = (chapters || []).length;
-  const progress = total ? Math.round((published / total) * 100) : 0;
+  const draftCount = (chapters || []).filter(
+    (c) => c.status === "draft",
+  ).length;
+  const totalCount = (chapters || []).length;
+  const progress = totalCount ? Math.round((pubCount / totalCount) * 100) : 0;
 
+  /* ─── handlers ─── */
   const toggleExpand = (id) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const handleSubjectCardClick = (sub) => {
+    const cid = sub.classId?._id || sub.classId;
+    setClassId(cid);
+    setSubjectId(sub._id);
+    setSearch("");
+    setExpanded({});
+  };
+
+  const handleBackToOverview = () => {
+    setClassId("");
+    setSubjectId("");
+    setSearch("");
+    setExpanded({});
+  };
+
+  const isLoading = isOverview
+    ? loadingTeacherSubs || loadingOverview || loadingClasses
+    : loadingChapters;
 
   return (
     <Box>
@@ -117,29 +227,40 @@ export default function TeacherContent() {
       >
         <Box>
           <Typography sx={{ fontSize: "22px", fontWeight: 500, mb: 0.25 }}>
-            Content
+            {isOverview ? "My Content" : "Content"}
           </Typography>
           <Typography
             sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
           >
-            {selectedClass && selectedSubject
-              ? `Class ${selectedClass.grade} · ${selectedSubject.name}`
-              : "Select a class and subject to manage chapters"}
+            {isOverview
+              ? "Overview of all your teaching content"
+              : `Class ${selectedClass?.grade || ""}${selectedClass?.section || ""} · ${selectedSubject?.name || ""}`}
           </Typography>
         </Box>
-        {subjectId && (
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddOutlinedIcon />}
-            onClick={() =>
-              navigate(`/teacher/content/add?subjectId=${subjectId}`)
-            }
-            sx={{ textTransform: "none" }}
-          >
-            Add chapter
-          </Button>
-        )}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {!isOverview && (
+            <Button
+              size="small"
+              onClick={handleBackToOverview}
+              sx={{ textTransform: "none" }}
+            >
+              ← Overview
+            </Button>
+          )}
+          {subjectId && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddOutlinedIcon />}
+              onClick={() =>
+                navigate(`/teacher/content/add?subjectId=${subjectId}`)
+              }
+              sx={{ textTransform: "none" }}
+            >
+              Add chapter
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Filters */}
@@ -167,9 +288,9 @@ export default function TeacherContent() {
             <MenuItem value="" disabled>
               Select class
             </MenuItem>
-            {(classes || []).map((c) => (
+            {classes.map((c) => (
               <MenuItem key={c._id} value={c._id}>
-                Class {c.grade}
+                Class {c.grade} {c.section || ""}
               </MenuItem>
             ))}
           </Select>
@@ -189,7 +310,7 @@ export default function TeacherContent() {
             <MenuItem value="" disabled>
               Select subject
             </MenuItem>
-            {(subjects || []).map((s) => (
+            {subjects.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.name}
               </MenuItem>
@@ -225,7 +346,7 @@ export default function TeacherContent() {
       </Box>
 
       {/* Loading */}
-      {subjectId && loadingChapters && (
+      {isLoading && (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {[1, 2, 3].map((i) => (
             <Skeleton
@@ -238,8 +359,8 @@ export default function TeacherContent() {
         </Box>
       )}
 
-      {/* Content area */}
-      {subjectId && !loadingChapters && (
+      {/* ============ SUBJECT MODE ============ */}
+      {!isOverview && !isLoading && (
         <>
           {/* Stats summary */}
           <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
@@ -293,7 +414,7 @@ export default function TeacherContent() {
                     component="span"
                     sx={{ fontWeight: 600, color: "var(--color-text-success)" }}
                   >
-                    {published}
+                    {pubCount}
                   </Box>{" "}
                   published
                 </Typography>
@@ -307,7 +428,7 @@ export default function TeacherContent() {
                     component="span"
                     sx={{ fontWeight: 600, color: "var(--color-text-warning)" }}
                   >
-                    {drafts}
+                    {draftCount}
                   </Box>{" "}
                   drafts
                 </Typography>
@@ -318,7 +439,7 @@ export default function TeacherContent() {
                   }}
                 >
                   <Box component="span" sx={{ fontWeight: 600 }}>
-                    {total}
+                    {totalCount}
                   </Box>{" "}
                   total
                 </Typography>
@@ -347,6 +468,7 @@ export default function TeacherContent() {
           {filtered.map((ch, i) => {
             const st = statusConfig[ch.status] || statusConfig.not_started;
             const isExpanded = expanded[ch._id];
+            const topicsList = ch.topics || [];
             return (
               <Box
                 key={ch._id}
@@ -361,7 +483,7 @@ export default function TeacherContent() {
                 <Box
                   sx={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 2,
                     py: 1.5,
                     px: 2,
@@ -380,9 +502,10 @@ export default function TeacherContent() {
                       fontSize: "13px",
                       color: "var(--color-text-secondary)",
                       flexShrink: 0,
+                      mt: 0.25,
                     }}
                   >
-                    {i + 1}
+                    {ch.order || i + 1}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box
@@ -411,51 +534,82 @@ export default function TeacherContent() {
                         {st.label}
                       </Box>
                     </Box>
-                    <Typography
-                      sx={{
-                        fontSize: "12px",
-                        color: "var(--color-text-secondary)",
-                      }}
-                    >
-                      {ch.topicCount || 0} topic{ch.topicCount !== 1 ? "s" : ""}
-                    </Typography>
-                  </Box>
-                  {/* Content type icons */}
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                    {Object.entries(typeConfig).map(([key, cfg]) => {
-                      const has = ch.contentTypes?.includes(key);
-                      const Icon = cfg.icon;
-                      return (
-                        <Box
-                          key={key}
-                          title={cfg.label}
+                    {ch.description && (
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          color: "var(--color-text-secondary)",
+                          mb: 0.5,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                      >
+                        {ch.description}
+                      </Typography>
+                    )}
+                    {/* Topic pills */}
+                    {topicsList.length > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 0.5,
+                          mt: 0.5,
+                        }}
+                      >
+                        {topicsList.map((t) => {
+                          const Icon = typeIcon[t.type] || ArticleOutlinedIcon;
+                          const color = typeColor[t.type] || "#6b7280";
+                          return (
+                            <Box
+                              key={t._id}
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                fontSize: "11px",
+                                color: "var(--color-text-secondary)",
+                                bgcolor: `${color}0a`,
+                                border: `0.5px solid ${color}20`,
+                                borderRadius: "4px",
+                                px: 0.75,
+                                py: 0.25,
+                              }}
+                            >
+                              <Icon sx={{ fontSize: 12, color }} />
+                              {t.title}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    )}
+                    {/* Meta line */}
+                    <Box sx={{ display: "flex", gap: 2, mt: 0.75 }}>
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        {ch.topicCount || 0} topic
+                        {(ch.topicCount || 0) !== 1 ? "s" : ""}
+                      </Typography>
+                      {ch.updatedAt && (
+                        <Typography
                           sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "6px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            bgcolor: has ? `${cfg.color}14` : "transparent",
-                            border: has
-                              ? "none"
-                              : "0.5px solid var(--color-border-tertiary)",
+                            fontSize: "11px",
+                            color: "var(--color-text-secondary)",
                           }}
                         >
-                          <Icon
-                            sx={{
-                              fontSize: 16,
-                              color: has
-                                ? cfg.color
-                                : "var(--color-text-secondary)",
-                              opacity: has ? 1 : 0.4,
-                            }}
-                          />
-                        </Box>
-                      );
-                    })}
+                          Updated {timeAgo(ch.updatedAt)}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
-                  {ch.topics?.length > 0 && (
+                  {topicsList.length > 0 && (
                     <IconButton
                       size="small"
                       onClick={() => toggleExpand(ch._id)}
@@ -476,51 +630,55 @@ export default function TeacherContent() {
                       flexShrink: 0,
                       textTransform: "none",
                     }}
-                    onClick={() => navigate(`/teacher/content/${ch._id}`)}
+                    onClick={() => navigate(`/teacher/content/${ch._id}/edit`)}
                   >
                     {ch.status !== "not_started" ? "Edit" : "Start"}
                   </Button>
                 </Box>
-                {/* Expandable topics */}
-                {ch.topics?.length > 0 && (
+                {/* Expandable topics detail */}
+                {topicsList.length > 0 && (
                   <Collapse in={isExpanded}>
-                    <Box sx={{ px: 2, pb: 1.5, pl: 7 }}>
-                      {ch.topics.map((t, ti) => (
-                        <Box
-                          key={t._id || ti}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            py: 0.75,
-                            borderTop:
-                              ti === 0
-                                ? "0.5px solid var(--color-border-tertiary)"
-                                : "none",
-                          }}
-                        >
+                    <Box
+                      sx={{
+                        px: 2,
+                        pb: 1.5,
+                        pl: 7,
+                        borderTop: "0.5px solid var(--color-border-tertiary)",
+                      }}
+                    >
+                      {topicsList.map((t, ti) => {
+                        const Icon = typeIcon[t.type] || ArticleOutlinedIcon;
+                        const color = typeColor[t.type] || "#6b7280";
+                        const label = typeLabel[t.type] || t.type;
+                        return (
                           <Box
+                            key={t._id || ti}
                             sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              bgcolor:
-                                t.status === "published"
-                                  ? "var(--color-text-success)"
-                                  : "var(--color-border-tertiary)",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            sx={{
-                              fontSize: "12px",
-                              color: "var(--color-text-secondary)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
+                              py: 0.75,
+                              borderTop:
+                                ti > 0
+                                  ? "0.5px dashed var(--color-border-tertiary)"
+                                  : "none",
                             }}
                           >
-                            {t.title || `Topic ${ti + 1}`}
-                          </Typography>
-                        </Box>
-                      ))}
+                            <Icon sx={{ fontSize: 14, color }} />
+                            <Typography sx={{ fontSize: "12px", flex: 1 }}>
+                              {t.title || `Topic ${ti + 1}`}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "11px",
+                                color: "var(--color-text-secondary)",
+                              }}
+                            >
+                              {label}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
                     </Box>
                   </Collapse>
                 )}
@@ -573,26 +731,276 @@ export default function TeacherContent() {
         </>
       )}
 
-      {/* Empty state */}
-      {!subjectId && !loadingClasses && !loadingSubjects && (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <FolderOpenOutlinedIcon
+      {/* ============ OVERVIEW MODE ============ */}
+      {isOverview && !isLoading && (
+        <>
+          {/* Overall stats */}
+          <Box
             sx={{
-              fontSize: 48,
-              color: "var(--color-text-secondary)",
-              mb: 1.5,
-              opacity: 0.4,
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 2,
+              mb: 3,
             }}
-          />
-          <Typography sx={{ fontSize: "14px", fontWeight: 500, mb: 0.5 }}>
-            Select a class and subject
-          </Typography>
-          <Typography
-            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
           >
-            Choose from the dropdowns above to view and manage content
+            {[
+              {
+                label: "Subjects",
+                value: overallStats.subjects,
+                icon: MenuBookOutlinedIcon,
+                color: "#2563eb",
+              },
+              {
+                label: "Chapters",
+                value: overallStats.chapters,
+                icon: FolderOpenOutlinedIcon,
+                color: "#7c3aed",
+              },
+              {
+                label: "Published",
+                value: overallStats.published,
+                icon: CheckCircleOutlinedIcon,
+                color: "#059669",
+              },
+              {
+                label: "Topics",
+                value: overallStats.topics,
+                icon: TopicOutlinedIcon,
+                color: "#d97706",
+              },
+            ].map((s) => (
+              <Box
+                key={s.label}
+                sx={{
+                  bgcolor: "var(--color-background-primary)",
+                  border: "0.5px solid var(--color-border-tertiary)",
+                  borderRadius: "var(--border-radius-lg)",
+                  py: 2,
+                  px: 2.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "10px",
+                    bgcolor: `${s.color}14`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <s.icon sx={{ fontSize: 20, color: s.color }} />
+                </Box>
+                <Box>
+                  <Typography
+                    sx={{ fontSize: "20px", fontWeight: 600, lineHeight: 1.2 }}
+                  >
+                    {s.value}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "12px",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    {s.label}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Subject cards */}
+          <Typography sx={{ fontSize: "14px", fontWeight: 500, mb: 2 }}>
+            Subjects you teach
           </Typography>
-        </Box>
+
+          {teacherSubjects?.length === 0 && (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <FolderOpenOutlinedIcon
+                sx={{
+                  fontSize: 40,
+                  color: "var(--color-text-secondary)",
+                  mb: 1,
+                  opacity: 0.5,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "13px",
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                No subjects assigned yet
+              </Typography>
+            </Box>
+          )}
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 2,
+            }}
+          >
+            {(teacherSubjects || []).map((sub) => {
+              const stats = subjectStats[sub._id] || {
+                chapters: 0,
+                published: 0,
+                topics: 0,
+              };
+              const pct = stats.chapters
+                ? Math.round((stats.published / stats.chapters) * 100)
+                : 0;
+              const cls = sub.classId;
+              const classLabel = cls?.grade
+                ? `Class ${cls.grade}${cls.section || ""}`
+                : "";
+              return (
+                <Box
+                  key={sub._id}
+                  onClick={() => handleSubjectCardClick(sub)}
+                  sx={{
+                    bgcolor: "var(--color-background-primary)",
+                    border: "0.5px solid var(--color-border-tertiary)",
+                    borderRadius: "var(--border-radius-lg)",
+                    p: 2.5,
+                    cursor: "pointer",
+                    transition: "border-color 0.15s, box-shadow 0.15s",
+                    "&:hover": {
+                      borderColor: sub.color || "var(--color-border-secondary)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mb: 1.5,
+                    }}
+                  >
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                    >
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "8px",
+                          bgcolor: (sub.color || "#6b7280") + "18",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MenuBookOutlinedIcon
+                          sx={{
+                            fontSize: 18,
+                            color: sub.color || "#6b7280",
+                          }}
+                        />
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
+                          {sub.name}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: "12px",
+                            color: "var(--color-text-secondary)",
+                          }}
+                        >
+                          {classLabel}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <ArrowForwardIosIcon
+                      sx={{
+                        fontSize: 12,
+                        color: "var(--color-text-secondary)",
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 0.5,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        Progress
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          color:
+                            pct >= 50
+                              ? "var(--color-text-success)"
+                              : "var(--color-text-secondary)",
+                        }}
+                      >
+                        {pct}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={pct}
+                      sx={{
+                        height: 4,
+                        borderRadius: 2,
+                        bgcolor: "var(--color-background-secondary)",
+                        "& .MuiLinearProgress-bar": {
+                          bgcolor: sub.color || "#059669",
+                          borderRadius: 2,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      <Box component="span" sx={{ fontWeight: 600 }}>
+                        {stats.published}
+                      </Box>
+                      /{stats.chapters} chapters
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      <Box component="span" sx={{ fontWeight: 600 }}>
+                        {stats.topics}
+                      </Box>{" "}
+                      topics
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        </>
       )}
     </Box>
   );

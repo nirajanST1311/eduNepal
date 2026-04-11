@@ -2,6 +2,46 @@ const XLSX = require("xlsx");
 const User = require("../models/User");
 const Class = require("../models/Class");
 
+// Normalize sheet headers to lowercase and camelCase common variants
+function normalizeRows(rows) {
+  return rows.map((row) => {
+    const normalized = {};
+    for (const [key, value] of Object.entries(row)) {
+      const k = key.trim().toLowerCase().replace(/\s+/g, "");
+      // Map common variants
+      if (
+        k === "name" ||
+        k === "fullname" ||
+        k === "teachername" ||
+        k === "studentname"
+      ) {
+        normalized.name = value;
+      } else if (k === "email" || k === "emailaddress" || k === "emailid") {
+        normalized.email = value;
+      } else if (
+        k === "phone" ||
+        k === "phonenumber" ||
+        k === "mobile" ||
+        k === "contact"
+      ) {
+        normalized.phone = value;
+      } else if (
+        k === "rollnumber" ||
+        k === "roll" ||
+        k === "rollno" ||
+        k === "roll#"
+      ) {
+        normalized.rollNumber = value;
+      } else if (k === "class" || k === "grade" || k === "classsection") {
+        normalized.class = value;
+      } else {
+        normalized[k] = value;
+      }
+    }
+    return normalized;
+  });
+}
+
 // ─── Sample Excel generation ───
 
 exports.teacherSample = (req, res) => {
@@ -97,7 +137,7 @@ exports.bulkUploadTeachers = async (req, res) => {
   try {
     const wb = XLSX.read(req.file.buffer, { type: "buffer" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    rows = normalizeRows(XLSX.utils.sheet_to_json(ws, { defval: "" }));
   } catch {
     return res.status(400).json({ message: "Invalid Excel file" });
   }
@@ -127,14 +167,14 @@ exports.bulkUploadTeachers = async (req, res) => {
     const phone = String(row.phone || "").trim();
 
     if (!name) {
-      results.errors.push({ row: rowNum, email, reason: "Name is required" });
+      results.errors.push({ row: rowNum, email, error: "Name is required" });
       continue;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       results.errors.push({
         row: rowNum,
         email: email || "(empty)",
-        reason: "Invalid email",
+        error: "Invalid email",
       });
       continue;
     }
@@ -145,7 +185,7 @@ exports.bulkUploadTeachers = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: "Email already exists",
+        error: "Email already exists",
       });
       continue;
     }
@@ -164,7 +204,7 @@ exports.bulkUploadTeachers = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: err.message || "Failed to create",
+        error: err.message || "Failed to create",
       });
     }
   }
@@ -188,7 +228,7 @@ exports.bulkUploadStudents = async (req, res) => {
   try {
     const wb = XLSX.read(req.file.buffer, { type: "buffer" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    rows = normalizeRows(XLSX.utils.sheet_to_json(ws, { defval: "" }));
   } catch {
     return res.status(400).json({ message: "Invalid Excel file" });
   }
@@ -233,14 +273,14 @@ exports.bulkUploadStudents = async (req, res) => {
     const classStr = String(row.class || "").trim();
 
     if (!name) {
-      results.errors.push({ row: rowNum, email, reason: "Name is required" });
+      results.errors.push({ row: rowNum, email, error: "Name is required" });
       continue;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       results.errors.push({
         row: rowNum,
         email: email || "(empty)",
-        reason: "Invalid email",
+        error: "Invalid email",
       });
       continue;
     }
@@ -248,7 +288,7 @@ exports.bulkUploadStudents = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: 'Class is required (format: "10-A")',
+        error: 'Class is required (format: "10-A")',
       });
       continue;
     }
@@ -258,7 +298,7 @@ exports.bulkUploadStudents = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: `Class "${classStr}" not found. Available: ${Object.keys(classMap).join(", ")}`,
+        error: `Class "${classStr}" not found. Available: ${Object.keys(classMap).join(", ")}`,
       });
       continue;
     }
@@ -268,7 +308,7 @@ exports.bulkUploadStudents = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: "Email already exists",
+        error: "Email already exists",
       });
       continue;
     }
@@ -289,7 +329,7 @@ exports.bulkUploadStudents = async (req, res) => {
       results.errors.push({
         row: rowNum,
         email,
-        reason: err.message || "Failed to create",
+        error: err.message || "Failed to create",
       });
     }
   }

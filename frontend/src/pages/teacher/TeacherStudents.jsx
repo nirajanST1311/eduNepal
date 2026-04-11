@@ -9,9 +9,14 @@ import {
   Avatar,
   InputBase,
   Skeleton,
+  LinearProgress,
 } from "@mui/material";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { useSelector } from "react-redux";
 import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetStudentsQuery } from "@/store/api/studentApi";
@@ -41,13 +46,185 @@ function getInitials(name) {
     : parts[0][0];
 }
 
+/* ─── Class card for landing page ─── */
+function ClassStudentCard({ cls, onSelect }) {
+  const { data: classStudents = [] } = useGetStudentsQuery(
+    { classId: cls._id },
+    { skip: !cls._id },
+  );
+  const total = classStudents.length;
+  const withAtt = classStudents.filter((s) => s.attendancePercent != null);
+  const avgPct =
+    withAtt.length > 0
+      ? Math.round(
+          withAtt.reduce((sum, s) => sum + s.attendancePercent, 0) /
+            withAtt.length,
+        )
+      : null;
+  const lowCount = withAtt.filter((s) => s.attendancePercent < 75).length;
+
+  return (
+    <Box
+      onClick={() => onSelect(cls._id)}
+      sx={{
+        bgcolor: "var(--color-background-primary)",
+        border: "0.5px solid var(--color-border-tertiary)",
+        borderRadius: "var(--border-radius-lg)",
+        p: 2.5,
+        cursor: "pointer",
+        transition: "all 0.15s",
+        "&:hover": {
+          borderColor: "var(--color-brand)",
+          bgcolor: "var(--color-background-secondary)",
+        },
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "var(--border-radius-md)",
+              bgcolor: "var(--color-background-secondary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <SchoolOutlinedIcon
+              sx={{ fontSize: 20, color: "var(--color-text-secondary)" }}
+            />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
+              Class {cls.grade} {cls.section}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: "var(--color-text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
+              <GroupsOutlinedIcon sx={{ fontSize: 14 }} />
+              {total} student{total !== 1 ? "s" : ""}
+            </Typography>
+          </Box>
+        </Box>
+        <ArrowForwardIcon
+          sx={{ fontSize: 18, color: "var(--color-text-secondary)", mt: 0.5 }}
+        />
+      </Box>
+
+      {/* Stats row */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+        {avgPct != null && (
+          <Box sx={{ flex: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                mb: 0.5,
+              }}
+            >
+              <Typography
+                sx={{ fontSize: "11px", color: "var(--color-text-secondary)" }}
+              >
+                Avg attendance
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color:
+                    avgPct >= 80
+                      ? "var(--color-text-success)"
+                      : avgPct >= 50
+                        ? "var(--color-text-warning)"
+                        : "var(--color-text-danger)",
+                }}
+              >
+                {avgPct}%
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={avgPct}
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                bgcolor: "var(--color-background-secondary)",
+                "& .MuiLinearProgress-bar": {
+                  borderRadius: 2,
+                  bgcolor:
+                    avgPct >= 80
+                      ? "#059669"
+                      : avgPct >= 50
+                        ? "#d97706"
+                        : "#dc2626",
+                },
+              }}
+            />
+          </Box>
+        )}
+        {lowCount > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              bgcolor: "rgba(220, 38, 38, 0.06)",
+              borderRadius: "var(--border-radius-md)",
+              px: 1,
+              py: 0.5,
+              flexShrink: 0,
+            }}
+          >
+            <WarningAmberOutlinedIcon
+              sx={{ fontSize: 13, color: "var(--color-text-danger)" }}
+            />
+            <Typography
+              sx={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "var(--color-text-danger)",
+              }}
+            >
+              {lowCount}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 export default function TeacherStudents() {
   const { user } = useSelector((s) => s.auth);
   const navigate = useNavigate();
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
 
-  const { data: classes } = useGetClassesQuery({ schoolId: user?.schoolId });
+  const { data: allClasses } = useGetClassesQuery({ schoolId: user?.schoolId });
+  const classes = useMemo(
+    () =>
+      (allClasses || []).filter((c) =>
+        user?.classIds?.length ? user.classIds.includes(c._id) : true,
+      ),
+    [allClasses, user?.classIds],
+  );
   const { data: students = [], isLoading: loadingStudents } =
     useGetStudentsQuery(classId ? { classId } : undefined, { skip: !classId });
 
@@ -266,29 +443,34 @@ export default function TeacherStudents() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "1fr 100px",
+              gridTemplateColumns: "1fr 120px",
               px: 2.5,
               py: 1,
               borderBottom: "0.5px solid var(--color-border-tertiary)",
+              bgcolor: "var(--color-background-secondary)",
             }}
           >
             <Typography
               sx={{
-                fontSize: "12px",
-                fontWeight: 500,
+                fontSize: "11px",
+                fontWeight: 600,
                 color: "var(--color-text-secondary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
               }}
             >
-              Name
+              Student
               {search
                 ? ` · ${filtered.length} result${filtered.length !== 1 ? "s" : ""}`
-                : ""}
+                : ` (${filtered.length})`}
             </Typography>
             <Typography
               sx={{
-                fontSize: "12px",
-                fontWeight: 500,
+                fontSize: "11px",
+                fontWeight: 600,
                 color: "var(--color-text-secondary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
                 textAlign: "right",
               }}
             >
@@ -306,6 +488,14 @@ export default function TeacherStudents() {
                   : pct >= 75
                     ? "var(--color-text-warning)"
                     : "var(--color-text-danger)";
+            const barColor =
+              pct === null
+                ? "#ccc"
+                : pct >= 90
+                  ? "#059669"
+                  : pct >= 75
+                    ? "#d97706"
+                    : "#dc2626";
             const initials = getInitials(s.name);
             const bgColor = getColor(s.name);
             return (
@@ -329,9 +519,9 @@ export default function TeacherStudents() {
               >
                 <Avatar
                   sx={{
-                    width: 36,
-                    height: 36,
-                    fontSize: 13,
+                    width: 40,
+                    height: 40,
+                    fontSize: 14,
                     fontWeight: 500,
                     bgcolor: bgColor,
                   }}
@@ -367,15 +557,43 @@ export default function TeacherStudents() {
                     }}
                   >
                     Roll {s.rollNumber || String(i + 1).padStart(2, "0")}
-                    {s.parentPhone && ` · ${s.parentPhone}`}
+                    {s.phone ? ` · ${s.phone}` : ""}
+                    {s.email ? ` · ${s.email}` : ""}
                   </Typography>
                 </Box>
-                <Box sx={{ textAlign: "right", flexShrink: 0, minWidth: 60 }}>
+                <Box sx={{ textAlign: "right", flexShrink: 0, minWidth: 80 }}>
                   <Typography
                     sx={{ fontSize: "14px", fontWeight: 600, color: attColor }}
                   >
                     {pct !== null ? `${pct}%` : "—"}
                   </Typography>
+                  {pct !== null && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={pct}
+                      sx={{
+                        height: 3,
+                        borderRadius: 2,
+                        mt: 0.5,
+                        bgcolor: "var(--color-background-secondary)",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 2,
+                          bgcolor: barColor,
+                        },
+                      }}
+                    />
+                  )}
+                  {pct !== null && s.totalDays > 0 && (
+                    <Typography
+                      sx={{
+                        fontSize: "10px",
+                        color: "var(--color-text-secondary)",
+                        mt: 0.25,
+                      }}
+                    >
+                      {s.totalPresent}/{s.totalDays} days
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             );
@@ -405,25 +623,130 @@ export default function TeacherStudents() {
         </Box>
       )}
 
-      {/* No class selected */}
+      {/* No class selected — overview landing */}
       {!classId && (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <PeopleOutlinedIcon
+        <Box>
+          {/* Summary cards */}
+          <Box
             sx={{
-              fontSize: 48,
-              color: "var(--color-text-secondary)",
-              mb: 1.5,
-              opacity: 0.4,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: 2,
+              mb: 3,
             }}
-          />
-          <Typography sx={{ fontSize: "14px", fontWeight: 500, mb: 0.5 }}>
-            Select a class
-          </Typography>
-          <Typography
-            sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
           >
-            Choose a class from above to view students
+            <Box
+              sx={{
+                bgcolor: "var(--color-background-primary)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                borderRadius: "var(--border-radius-lg)",
+                p: 2,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "var(--color-text-secondary)",
+                  mb: 0.5,
+                }}
+              >
+                Your Classes
+              </Typography>
+              <Typography sx={{ fontSize: "22px", fontWeight: 600 }}>
+                {classes.length}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                bgcolor: "var(--color-background-primary)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                borderRadius: "var(--border-radius-lg)",
+                p: 2,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "var(--color-text-secondary)",
+                  mb: 0.5,
+                }}
+              >
+                Role
+              </Typography>
+              <Typography sx={{ fontSize: "14px", fontWeight: 600 }}>
+                Class Teacher
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Section header */}
+          <Typography
+            sx={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "var(--color-text-secondary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              mb: 1.5,
+            }}
+          >
+            Select a class to view students
           </Typography>
+
+          {/* Class cards */}
+          {classes.length > 0 ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                },
+                gap: 2,
+              }}
+            >
+              {classes.map((c) => (
+                <ClassStudentCard
+                  key={c._id}
+                  cls={c}
+                  onSelect={(id) => {
+                    setClassId(id);
+                    setSearch("");
+                  }}
+                />
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 6,
+                bgcolor: "var(--color-background-primary)",
+                border: "0.5px solid var(--color-border-tertiary)",
+                borderRadius: "var(--border-radius-lg)",
+              }}
+            >
+              <PeopleOutlinedIcon
+                sx={{
+                  fontSize: 40,
+                  color: "var(--color-text-secondary)",
+                  mb: 1,
+                  opacity: 0.4,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "13px",
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                No classes assigned yet
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
     </Box>

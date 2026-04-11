@@ -48,6 +48,7 @@ const labelMap = {
   add: "Add",
   create: "Create",
   grade: "Grade",
+  edit: "Edit",
 };
 
 const isObjectId = (s) => /^[a-f\d]{24}$/i.test(s);

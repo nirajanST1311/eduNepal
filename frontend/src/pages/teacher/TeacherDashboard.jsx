@@ -8,6 +8,8 @@ import {
   Skeleton,
   LinearProgress,
   Button,
+  Chip,
+  Avatar,
 } from "@mui/material";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
@@ -17,6 +19,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GradingOutlinedIcon from "@mui/icons-material/GradingOutlined";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -24,6 +27,7 @@ import { useGetStudentsQuery } from "@/store/api/studentApi";
 import { useGetAssignmentsQuery } from "@/store/api/assignmentApi";
 import { useGetChaptersQuery } from "@/store/api/chapterApi";
 import { useGetSubjectsQuery } from "@/store/api/subjectApi";
+import { useGetClassesQuery } from "@/store/api/classApi";
 import { useGetNoticesQuery } from "@/store/api/noticeApi";
 
 function getGreeting() {
@@ -36,16 +40,59 @@ function getGreeting() {
 export default function TeacherDashboard() {
   const { user } = useSelector((s) => s.auth);
   const navigate = useNavigate();
-  const { data: students, isLoading: loadingStudents } = useGetStudentsQuery({
-    schoolId: user?.schoolId,
-  });
+  const { data: allStudents, isLoading: loadingStudents } = useGetStudentsQuery(
+    { schoolId: user?.schoolId },
+  );
   const { data: assignments = [], isLoading: loadingAssignments } =
     useGetAssignmentsQuery({});
-  const { data: chapters = [] } = useGetChaptersQuery({});
-  const { data: subjects = [] } = useGetSubjectsQuery({});
+  const { data: allChapters = [] } = useGetChaptersQuery({
+    schoolId: user?.schoolId,
+  });
+  const { data: allSubjects = [] } = useGetSubjectsQuery({
+    schoolId: user?.schoolId,
+  });
+  const { data: allClasses = [] } = useGetClassesQuery({
+    schoolId: user?.schoolId,
+  });
   const { data: notices = [] } = useGetNoticesQuery({ limit: 5 });
 
-  const totalStudents = students?.length || 0;
+  // Filter data to teacher's assigned classes/subjects
+  const classes = useMemo(
+    () =>
+      allClasses.filter((c) =>
+        user?.classIds?.length ? user.classIds.includes(c._id) : true,
+      ),
+    [allClasses, user?.classIds],
+  );
+
+  const subjects = useMemo(
+    () =>
+      allSubjects.filter((s) =>
+        user?.subjectIds?.length ? user.subjectIds.includes(s._id) : true,
+      ),
+    [allSubjects, user?.subjectIds],
+  );
+
+  const students = useMemo(
+    () =>
+      (allStudents || []).filter((s) => {
+        if (!user?.classIds?.length) return true;
+        const cid = typeof s.classId === "object" ? s.classId?._id : s.classId;
+        return user.classIds.includes(cid);
+      }),
+    [allStudents, user?.classIds],
+  );
+
+  const chapters = useMemo(
+    () =>
+      allChapters.filter((c) => {
+        if (!user?.subjectIds?.length) return true;
+        return user.subjectIds.includes(c.subjectId);
+      }),
+    [allChapters, user?.subjectIds],
+  );
+
+  const totalStudents = students.length;
   const pendingReview = useMemo(
     () =>
       assignments.filter(
@@ -72,6 +119,29 @@ export default function TeacherDashboard() {
   );
 
   const today = dayjs();
+
+  // Per-class overview
+  const classOverview = useMemo(
+    () =>
+      classes.map((c) => {
+        const count = students.filter((s) => {
+          const cid =
+            typeof s.classId === "object" ? s.classId?._id : s.classId;
+          return cid === c._id;
+        }).length;
+        const classSubjects = subjects.filter((sub) => {
+          const sid =
+            typeof sub.classId === "object" ? sub.classId?._id : sub.classId;
+          return sid === c._id;
+        });
+        return {
+          ...c,
+          studentCount: count,
+          subjectCount: classSubjects.length,
+        };
+      }),
+    [classes, students, subjects],
+  );
 
   const stats = [
     {
@@ -135,7 +205,8 @@ export default function TeacherDashboard() {
           sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
         >
           {today.format("dddd, MMMM D")} · {subjects.length} subject
-          {subjects.length !== 1 ? "s" : ""} assigned
+          {subjects.length !== 1 ? "s" : ""} · {classes.length} class
+          {classes.length !== 1 ? "es" : ""} assigned
         </Typography>
       </Box>
 
@@ -189,6 +260,92 @@ export default function TeacherDashboard() {
           </Grid>
         ))}
       </Grid>
+
+      {/* My Classes Overview */}
+      {classOverview.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1.5,
+            }}
+          >
+            <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+              My Classes
+            </Typography>
+            <Button
+              size="small"
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+              onClick={() => navigate("/teacher/students")}
+              sx={{ fontSize: "12px", textTransform: "none" }}
+            >
+              View students
+            </Button>
+          </Box>
+          <Grid container spacing={1.5}>
+            {classOverview.map((c) => (
+              <Grid size={{ xs: 6, sm: 4, md: 3 }} key={c._id}>
+                <Box
+                  onClick={() => navigate("/teacher/students")}
+                  sx={{
+                    bgcolor: "var(--color-background-primary)",
+                    border: "0.5px solid var(--color-border-tertiary)",
+                    borderRadius: "var(--border-radius-md)",
+                    p: 1.5,
+                    cursor: "pointer",
+                    "&:hover": { bgcolor: "var(--color-background-secondary)" },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        bgcolor: "var(--color-background-info)",
+                        color: "var(--color-text-info)",
+                      }}
+                    >
+                      <SchoolOutlinedIcon sx={{ fontSize: 14 }} />
+                    </Avatar>
+                    <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
+                      Class {c.grade} {c.section || ""}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      {c.studentCount} student
+                      {c.studentCount !== 1 ? "s" : ""}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
+                      {c.subjectCount} subject
+                      {c.subjectCount !== 1 ? "s" : ""}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
 
       {/* Main Grid */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -356,7 +513,7 @@ export default function TeacherDashboard() {
                   {
                     label: "Create Assignment",
                     icon: <AssignmentOutlinedIcon sx={{ fontSize: 16 }} />,
-                    path: "/teacher/assignments/new",
+                    path: "/teacher/assignments/create",
                   },
                   {
                     label: "Add Chapter",
@@ -493,7 +650,7 @@ export default function TeacherDashboard() {
                 {draftChapters.slice(0, 3).map((c) => (
                   <Box
                     key={c._id}
-                    onClick={() => navigate(`/teacher/content/${c._id}`)}
+                    onClick={() => navigate(`/teacher/content/${c._id}/edit`)}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -668,6 +825,18 @@ export default function TeacherDashboard() {
                     <Typography sx={{ fontSize: "13px", fontWeight: 500 }}>
                       {n.title}
                     </Typography>
+                    {dayjs().diff(dayjs(n.createdAt), "day") <= 2 && (
+                      <Chip
+                        label="New"
+                        size="small"
+                        sx={{
+                          height: 16,
+                          fontSize: "10px",
+                          bgcolor: "var(--color-background-success)",
+                          color: "var(--color-text-success)",
+                        }}
+                      />
+                    )}
                   </Box>
                   <Typography
                     sx={{
