@@ -167,7 +167,7 @@ export default function EditChapter() {
       if (newStatus === "draft") {
         setSnackbar({ open: true, message: "Saved as draft.", severity: "success" });
       } else {
-        navigate(`/teacher/content/${chapterId}`);
+        navigate(`/teacher/content/${chapterId}`, { replace: true });
       }
     } catch {
       setSnackbar({ open: true, message: "Failed to save chapter.", severity: "error" });
@@ -216,7 +216,7 @@ export default function EditChapter() {
     <Box>
       <Button
         startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(`/teacher/content/${chapterId}`, { replace: true })}
         sx={{ mb: 2, textTransform: "none", color: "var(--color-text-secondary)", fontSize: "13px" }}
       >
         Back
@@ -494,7 +494,7 @@ export default function EditChapter() {
       <Divider sx={{ my: 2 }} />
       <Box sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end", alignItems: "center" }}>
         <Button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(`/teacher/content/${chapterId}`, { replace: true })}
           sx={{ textTransform: "none", color: "var(--color-text-secondary)" }}
         >
           Cancel

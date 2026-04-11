@@ -206,10 +206,7 @@ function SidebarContent({ onClose }) {
               </ListItemIcon>
               <ListItemText
                 primary={t(item.labelKey)}
-                primaryTypographyProps={{
-                  variant: "body2",
-                  fontWeight: active ? 600 : 400,
-                }}
+                slotProps={{ primary: { variant: "body2", fontWeight: active ? 600 : 400 } }}
               />
               {item.badge && (
                 <Badge

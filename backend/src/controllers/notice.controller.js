@@ -1,29 +1,60 @@
 const Notice = require("../models/Notice");
 
 exports.getAll = async (req, res) => {
-  const filter = {};
+  const must = [];
 
-  // Role-based visibility
+  // Role-based school visibility
   if (["STUDENT", "TEACHER", "SCHOOL_ADMIN"].includes(req.user.role)) {
-    filter.$or = [{ schoolId: req.user.schoolId }, { from: "municipality" }];
+    must.push({
+      $or: [{ schoolId: req.user.schoolId }, { from: "municipality" }],
+    });
   }
 
-  // Scope filter — "global" means anything that is NOT class-specific
-  // (handles legacy notices that have no scope field)
+  // Scope filter
   if (req.query.scope === "global") {
-    filter.scope = { $ne: "class" };
+    must.push({ scope: { $ne: "class" } });
   } else if (req.query.scope === "class") {
-    filter.scope = "class";
-    // Teachers only see class notices for their own classes
-    if (req.user.role === "TEACHER" && req.user.classIds?.length) {
-      filter.classId = { $in: req.user.classIds };
+    must.push({ scope: "class" });
+    // Teachers: restrict to their classes OR their own notices
+    if (req.user.role === "TEACHER") {
+      if (req.user.classIds?.length) {
+        must.push({
+          $or: [
+            { classId: { $in: req.user.classIds } },
+            { classIds: { $in: req.user.classIds } },
+            { authorId: req.user._id },
+          ],
+        });
+      } else {
+        // No classIds assigned — only see own notices
+        must.push({ authorId: req.user._id });
+      }
+    }
+    // Students: restrict to their class
+    if (req.user.role === "STUDENT" && req.user.classId) {
+      must.push({
+        $or: [{ classId: req.user.classId }, { classIds: req.user.classId }],
+      });
     }
   }
 
-  if (req.query.classId) filter.classId = req.query.classId;
-  if (req.query.category) filter.category = req.query.category;
-  if (req.query.priority) filter.priority = req.query.priority;
-  if (req.query.from) filter.from = req.query.from;
+  // Specific class filter
+  if (req.query.classId) {
+    must.push({
+      $or: [{ classId: req.query.classId }, { classIds: req.query.classId }],
+    });
+  }
+
+  if (req.query.category) must.push({ category: req.query.category });
+  if (req.query.priority) must.push({ priority: req.query.priority });
+  if (req.query.from) must.push({ from: req.query.from });
+
+  // Status filter — students never see drafts/inactive
+  if (req.query.status) {
+    must.push({ status: req.query.status });
+  } else if (req.user.role === "STUDENT") {
+    must.push({ status: { $nin: ["draft", "inactive"] } });
+  }
 
   // Search
   if (req.query.search) {
@@ -31,15 +62,10 @@ exports.getAll = async (req, res) => {
       req.query.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
       "i",
     );
-    const searchCond = [{ title: re }, { body: re }];
-    if (filter.$or) {
-      filter.$and = [{ $or: filter.$or }, { $or: searchCond }];
-      delete filter.$or;
-    } else {
-      filter.$or = searchCond;
-    }
+    must.push({ $or: [{ title: re }, { body: re }] });
   }
 
+  const filter = must.length > 0 ? { $and: must } : {};
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
 
@@ -47,6 +73,7 @@ exports.getAll = async (req, res) => {
     Notice.find(filter)
       .populate("authorId", "name role")
       .populate("classId", "grade section")
+      .populate("classIds", "grade section")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
@@ -66,6 +93,8 @@ exports.create = async (req, res) => {
     priority,
     scope,
     classId,
+    classIds,
+    status,
   } = req.body;
 
   // Teachers may only create class-specific notices
@@ -75,6 +104,16 @@ exports.create = async (req, res) => {
       .json({ message: "Teachers can only create class-specific notices" });
   }
 
+  // Normalise classIds: accept either classId (single) or classIds (array)
+  const resolvedClassIds =
+    scope === "class"
+      ? classIds?.length
+        ? classIds
+        : classId
+          ? [classId]
+          : []
+      : [];
+
   const notice = await Notice.create({
     title,
     body,
@@ -82,14 +121,17 @@ exports.create = async (req, res) => {
     targetAudience,
     priority: priority || "medium",
     scope: scope || "global",
-    classId: scope === "class" ? classId : undefined,
+    status: status || "active",
+    classId: resolvedClassIds[0] || undefined,
+    classIds: resolvedClassIds,
     authorId: req.user._id,
     schoolId: req.user.schoolId || schoolId || undefined,
     from: req.user.role === "SUPER_ADMIN" ? "municipality" : "school",
   });
-  const populated = await notice.populate("authorId", "name role");
+  await notice.populate("authorId", "name role");
   await notice.populate("classId", "grade section");
-  res.status(201).json(populated);
+  await notice.populate("classIds", "grade section");
+  res.status(201).json(notice);
 };
 
 exports.update = async (req, res) => {
@@ -101,14 +143,24 @@ exports.update = async (req, res) => {
   ) {
     return res.status(403).json({ message: "Not allowed" });
   }
-  const { title, body, category, priority } = req.body;
+  const { title, body, category, priority, classId, classIds, status } =
+    req.body;
   if (title !== undefined) notice.title = title;
   if (body !== undefined) notice.body = body;
   if (category !== undefined) notice.category = category;
   if (priority !== undefined) notice.priority = priority;
+  if (status !== undefined) notice.status = status;
+  if (classIds !== undefined) {
+    notice.classIds = classIds;
+    notice.classId = classIds[0] || undefined;
+  } else if (classId !== undefined) {
+    notice.classId = classId;
+    notice.classIds = classId ? [classId] : [];
+  }
   await notice.save();
   await notice.populate("authorId", "name role");
   await notice.populate("classId", "grade section");
+  await notice.populate("classIds", "grade section");
   res.json(notice);
 };
 

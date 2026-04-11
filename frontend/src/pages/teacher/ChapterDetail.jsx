@@ -9,28 +9,15 @@ import {
   Chip,
   ToggleButton,
   ToggleButtonGroup,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBackIosNew";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PlayCircleOutlinedIcon from "@mui/icons-material/PlayCircleOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import HeadphonesOutlinedIcon from "@mui/icons-material/HeadphonesOutlined";
 import { useSelector } from "react-redux";
-import {
-  useGetChapterQuery,
-  useUpdateChapterMutation,
-  useDeleteChapterMutation,
-} from "@/store/api/chapterApi";
+import { useGetChapterQuery } from "@/store/api/chapterApi";
 import {
   NoteContent,
   VideoContent,
@@ -58,27 +45,6 @@ export default function ChapterDetail() {
   const [selectedId, setSelectedId] = useState(null);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [activateDialog, setActivateDialog] = useState(false);
-  const [deactivateDialog, setDeactivateDialog] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [updateChapter, { isLoading: deactivating }] = useUpdateChapterMutation();
-  const [deleteChapter, { isLoading: deleting }] = useDeleteChapterMutation();
-
-  const handleDeactivate = async () => {
-    await updateChapter({ id: chapterId, status: "inactive" });
-    setDeactivateDialog(false);
-  };
-
-  const handleActivate = async () => {
-    await updateChapter({ id: chapterId, status: "published" });
-    setActivateDialog(false);
-  };
-
-  const handleDelete = async () => {
-    await deleteChapter(chapterId);
-    setDeleteDialog(false);
-    navigate(`/teacher/content?subjectId=${chapter.subjectId}`);
-  };
 
   // For students: hide inactive topics; for teachers: show all but dimmed
   const visibleTopics = useMemo(
@@ -232,52 +198,7 @@ export default function ChapterDetail() {
             fontSize: "11px",
           }}
         />
-        {user?.role === "TEACHER" && (
-          <>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<EditOutlinedIcon sx={{ fontSize: 14 }} />}
-              onClick={() => navigate(`/teacher/content/${chapterId}/edit`)}
-              sx={{ textTransform: "none", fontSize: "13px", flexShrink: 0 }}
-            >
-              Edit
-            </Button>
-            {chapter.status === "inactive" ? (
-              <Button
-                variant="outlined"
-                color="success"
-                size="small"
-                startIcon={<CheckCircleOutlinedIcon sx={{ fontSize: 14 }} />}
-                onClick={() => setActivateDialog(true)}
-                sx={{ textTransform: "none", fontSize: "13px", flexShrink: 0 }}
-              >
-                Activate
-              </Button>
-            ) : (
-              <Button
-                variant="outlined"
-                color="warning"
-                size="small"
-                startIcon={<BlockOutlinedIcon sx={{ fontSize: 14 }} />}
-                onClick={() => setDeactivateDialog(true)}
-                sx={{ textTransform: "none", fontSize: "13px", flexShrink: 0 }}
-              >
-                Deactivate
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              startIcon={<DeleteOutlinedIcon sx={{ fontSize: 14 }} />}
-              onClick={() => setDeleteDialog(true)}
-              sx={{ textTransform: "none", fontSize: "13px", flexShrink: 0 }}
-            >
-              Delete
-            </Button>
-          </>
-        )}
+
       </Box>
 
       {/* Body: topic list + content */}
@@ -538,72 +459,6 @@ export default function ChapterDetail() {
           )}
         </Box>
       </Box>
-
-      {/* Activate chapter dialog */}
-      <Dialog open={activateDialog} onClose={() => setActivateDialog(false)}>
-        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>Activate chapter?</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: "13px" }}>
-            &ldquo;{chapter?.title}&rdquo; will become visible to students.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActivateDialog(false)} sx={{ textTransform: "none" }}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="success"
-            disabled={deactivating}
-            onClick={handleActivate}
-            sx={{ textTransform: "none" }}
-          >
-            {deactivating ? <CircularProgress size={16} /> : "Activate"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Deactivate chapter dialog */}
-      <Dialog open={deactivateDialog} onClose={() => setDeactivateDialog(false)}>
-        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>Deactivate chapter?</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: "13px" }}>
-            Students will no longer see &ldquo;{chapter?.title}&rdquo;. You can re-publish it later from Edit.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeactivateDialog(false)} sx={{ textTransform: "none" }}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="warning"
-            disabled={deactivating}
-            onClick={handleDeactivate}
-            sx={{ textTransform: "none" }}
-          >
-            {deactivating ? <CircularProgress size={16} /> : "Deactivate"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete chapter dialog */}
-      <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
-        <DialogTitle sx={{ fontSize: "16px", fontWeight: 500 }}>Delete chapter?</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: "13px" }}>
-            This will permanently delete &ldquo;{chapter?.title}&rdquo; and all its topics. This cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog(false)} sx={{ textTransform: "none" }}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            disabled={deleting}
-            onClick={handleDelete}
-            sx={{ textTransform: "none" }}
-          >
-            {deleting ? <CircularProgress size={16} /> : "Delete"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

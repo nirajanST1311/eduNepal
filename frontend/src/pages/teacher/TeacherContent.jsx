@@ -17,6 +17,7 @@ import {
   DialogActions,
   CircularProgress,
   Tooltip,
+  Switch,
 } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
@@ -251,13 +252,13 @@ export default function TeacherContent() {
     const p = {};
     if (cid) p.classId = cid;
     if (sub._id) p.subjectId = sub._id;
-    setSearchParams(p);
+    setSearchParams(p, { replace: true });
     setSearch("");
     setExpanded({});
   };
 
   const handleBackToOverview = () => {
-    setSearchParams({});
+    setSearchParams({}, { replace: true });
     setSearch("");
     setExpanded({});
   };
@@ -308,15 +309,6 @@ export default function TeacherContent() {
           </Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1 }}>
-          {!isOverview && (
-            <Button
-              size="small"
-              onClick={handleBackToOverview}
-              sx={{ textTransform: "none" }}
-            >
-              ← Overview
-            </Button>
-          )}
           {subjectId && (
             <Button
               variant="contained"
@@ -796,16 +788,13 @@ export default function TeacherContent() {
                   >
                     {ch.status !== "not_started" ? "Edit" : "Start"}
                   </Button>
-                  <Tooltip title={ch.status === "inactive" ? "Activate chapter" : "Deactivate chapter"}>
-                    <IconButton
+                  <Tooltip title={ch.status === "inactive" ? "Activate" : "Deactivate"}>
+                    <Switch
                       size="small"
-                      onClick={() => setChActionTarget({ id: ch._id, title: ch.title, action: ch.status === "inactive" ? "activate" : "deactivate" })}
-                      sx={{ color: ch.status === "inactive" ? "success.main" : "text.secondary" }}
-                    >
-                      {ch.status === "inactive"
-                        ? <CheckCircleOutlinedIcon sx={{ fontSize: 16 }} />
-                        : <BlockOutlinedIcon sx={{ fontSize: 16 }} />}
-                    </IconButton>
+                      checked={ch.status !== "inactive"}
+                      onChange={() => setChActionTarget({ id: ch._id, title: ch.title, action: ch.status === "inactive" ? "activate" : "deactivate" })}
+                      sx={{ mx: 0.5 }}
+                    />
                   </Tooltip>
                   <Tooltip title="Delete chapter">
                     <IconButton

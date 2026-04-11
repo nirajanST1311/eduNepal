@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema(
     rollNumber: String,
     subjectIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subject" }],
     phone: String,
+    address: String,
     avatar: String,
     active: { type: Boolean, default: true },
   },

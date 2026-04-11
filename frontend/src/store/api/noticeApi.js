@@ -18,6 +18,7 @@ export const noticeApi = apiSlice.injectEndpoints({
         scope,
         priority,
         classId,
+        status,
       } = {}) => ({
         url: "/notices",
         params: {
@@ -29,6 +30,7 @@ export const noticeApi = apiSlice.injectEndpoints({
           ...(scope && { scope }),
           ...(priority && { priority }),
           ...(classId && { classId }),
+          ...(status && { status }),
         },
       }),
       providesTags: ["Notices"],

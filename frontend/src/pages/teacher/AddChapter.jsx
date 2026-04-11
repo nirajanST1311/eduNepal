@@ -141,9 +141,9 @@ export default function AddChapter() {
         }
       }
       if (statusToSave === "draft") {
-        navigate(`/teacher/content/${chapter._id}/edit`);
+        navigate(`/teacher/content/${chapter._id}/edit`, { replace: true });
       } else {
-        navigate(`/teacher/content/${chapter._id}`);
+        navigate(`/teacher/content/${chapter._id}`, { replace: true });
       }
     } catch {
       setSaveError("Failed to save. Please try again.");

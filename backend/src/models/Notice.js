@@ -27,10 +27,21 @@ const noticeSchema = new mongoose.Schema(
       enum: ["global", "class"],
       default: "global",
     },
+    status: {
+      type: String,
+      enum: ["active", "draft", "inactive"],
+      default: "active",
+    },
     classId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
     },
+    classIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Class",
+      },
+    ],
   },
   { timestamps: true },
 );

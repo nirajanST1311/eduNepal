@@ -1,5 +1,5 @@
-import { Box, Typography, Button } from "@mui/material";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { useState } from "react";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PlayCircleOutlinedIcon from "@mui/icons-material/PlayCircleOutlined";
@@ -186,6 +186,8 @@ export function VideoContent({ fileUrl, content }) {
 }
 
 export function PdfContent({ fileUrl }) {
+  const [loading, setLoading] = useState(true);
+
   if (!fileUrl)
     return (
       <Typography sx={{ fontSize: "14px", color: "var(--color-text-secondary)" }}>
@@ -204,15 +206,6 @@ export function PdfContent({ fileUrl }) {
     <Box>
       {/* Action buttons */}
       <Box sx={{ display: "flex", gap: 1, mb: 1.5 }}>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
-          onClick={() => window.open(correctedUrl, "_blank", "noopener,noreferrer")}
-          sx={{ textTransform: "none", fontSize: "13px" }}
-        >
-          Open PDF
-        </Button>
         <Button
           variant="outlined"
           size="small"
@@ -233,12 +226,26 @@ export function PdfContent({ fileUrl }) {
           border: "1px solid var(--color-border-tertiary)",
           height: { xs: 400, md: 600 },
           bgcolor: "var(--color-background-secondary)",
+          position: "relative",
         }}
       >
+        {loading && (
+          <Box sx={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 1.5,
+            bgcolor: "var(--color-background-secondary)",
+            zIndex: 1,
+          }}>
+            <CircularProgress size={32} />
+            <Typography sx={{ fontSize: "13px", color: "var(--color-text-secondary)" }}>Loading PDF…</Typography>
+          </Box>
+        )}
         <iframe
           src={`https://docs.google.com/gview?url=${encodeURIComponent(correctedUrl)}&embedded=true`}
           title="PDF Viewer"
           style={{ width: "100%", height: "100%", border: 0 }}
+          onLoad={() => setLoading(false)}
         />
       </Box>
     </Box>

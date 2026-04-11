@@ -297,21 +297,21 @@ export default function LandingPage() {
       >
         <FloatingParticles />
 
-        <Grid container spacing={{ xs: 4, md: 6 }} alignItems="flex-start" sx={{ position: "relative", zIndex: 1 }}>
+        <Grid container spacing={{ xs: 4, md: 6 }} alignItems="center" sx={{ position: "relative", zIndex: 1 }}>
           {/* LEFT — Hero + Stats */}
           <Grid size={{ xs: 12, md: 7 }}>
             <MotionBox
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
               <Typography
                 sx={{
-                  fontSize: { xs: "1.5rem", md: "2rem" },
-                  fontWeight: 700,
-                  lineHeight: 1.2,
+                  fontSize: { xs: "1.75rem", md: "2.25rem" },
+                  fontWeight: 800,
+                  lineHeight: 1.15,
                   mb: 1.5,
-                  letterSpacing: "-0.03em",
+                  letterSpacing: "-0.04em",
                   background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #0891b2 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -323,10 +323,10 @@ export default function LandingPage() {
                 variant="body1"
                 color="text.secondary"
                 sx={{
-                  fontSize: { xs: "0.875rem", md: "0.9375rem" },
+                  fontSize: { xs: "0.9rem", md: "1rem" },
                   maxWidth: 520,
                   mb: 4,
-                  lineHeight: 1.7,
+                  lineHeight: 1.75,
                 }}
               >
                 {t("public.hero.subtitle")}
@@ -421,9 +421,9 @@ export default function LandingPage() {
           {/* RIGHT — Login Form */}
           <Grid size={{ xs: 12, md: 5 }}>
             <MotionBox
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              initial={{ opacity: 0, x: 30, y: 10 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               sx={{
                 bgcolor: "background.paper",
                 border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.5)}`,
@@ -431,7 +431,7 @@ export default function LandingPage() {
                 p: { xs: 3, md: 4 },
                 position: { md: "sticky" },
                 top: { md: 100 },
-                boxShadow: "0 20px 40px rgba(0,0,0,0.06)",
+                boxShadow: "0 24px 48px rgba(0,0,0,0.08), 0 0 0 1px rgba(37,99,235,0.06)",
               }}
             >
               {/* Decorative gradient bar */}
@@ -518,29 +518,6 @@ export default function LandingPage() {
                   </Button>
                 </MotionBox>
               </FormWrapper>
-
-              {/* Demo credentials hint */}
-              <Box
-                sx={{
-                  mt: 3,
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: "var(--color-background-info)",
-                  border: "1px solid var(--color-border-info)",
-                }}
-              >
-                <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-text-info)", mb: 0.5 }}>
-                  Demo Accounts
-                </Typography>
-                <Typography sx={{ fontSize: "0.6875rem", color: "text.secondary", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
-                  admin@municipality.gov.np<br />
-                  teacher1@school1.edu.np<br />
-                  student1@school1.edu.np<br />
-                  <Typography component="span" sx={{ fontSize: "0.625rem", color: "text.secondary" }}>
-                    Password: password123
-                  </Typography>
-                </Typography>
-              </Box>
             </MotionBox>
           </Grid>
         </Grid>

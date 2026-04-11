@@ -47,3 +47,14 @@ exports.changePassword = async (req, res) => {
   await user.save();
   res.json({ message: "Password changed" });
 };
+
+exports.updateProfile = async (req, res) => {
+  const { phone, address } = req.body;
+  const update = {};
+  if (phone !== undefined) update.phone = phone;
+  if (address !== undefined) update.address = address;
+  const user = await User.findByIdAndUpdate(req.user._id, update, {
+    new: true,
+  });
+  res.json({ user });
+};

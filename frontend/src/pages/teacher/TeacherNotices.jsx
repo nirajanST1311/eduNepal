@@ -20,8 +20,10 @@ import {
   Tab,
   IconButton,
   Divider,
-  Snackbar,
   Alert,
+  Checkbox,
+  ListItemText as MuiListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
@@ -57,7 +59,7 @@ const CATEGORIES = [
 ];
 
 const PAGE_SIZE = 15;
-const EMPTY_FORM = { title: "", body: "", category: "general", priority: "medium", classId: "" };
+const EMPTY_FORM = { title: "", body: "", category: "general", priority: "medium", classIds: [] };
 
 function fmt(d) {
   const m = dayjs(d);
@@ -86,7 +88,15 @@ function FLabel({ children }) {
 function NoticeCard({ n, onEdit, onDelete }) {
   const pCfg = PRIORITY_CFG[n.priority];
   const cat = CATEGORIES.find((c) => c.value === n.category);
-  const classLabel = n.classId?.grade ? `Grade ${n.classId.grade}${n.classId.section || ""}` : null;
+
+  // Support both classIds array and legacy single classId
+  const classLabels = useMemo(() => {
+    const ids = n.classIds?.length ? n.classIds : (n.classId ? [n.classId] : []);
+    return ids
+      .filter(Boolean)
+      .map((c) => (c?.grade ? `Grade ${c.grade}${c.section || ""}` : null))
+      .filter(Boolean);
+  }, [n.classIds, n.classId]);
 
   return (
     <Box sx={{
@@ -123,15 +133,15 @@ function NoticeCard({ n, onEdit, onDelete }) {
               {n.from === "municipality" && (
                 <Box component="span" sx={{ px: 0.75, py: 0.1, borderRadius: "4px", fontSize: "10px", fontWeight: 500, bgcolor: "var(--color-background-info)", color: "var(--color-text-info)" }}>Municipality</Box>
               )}
-              {classLabel && (
-                <Box component="span" sx={{ px: 0.75, py: 0.1, borderRadius: "4px", fontSize: "10px", bgcolor: "#e3f2fd", color: "#1565c0" }}>{classLabel}</Box>
-              )}
+              {classLabels.map((label) => (
+                <Box key={label} component="span" sx={{ px: 0.75, py: 0.1, borderRadius: "4px", fontSize: "10px", bgcolor: "#e3f2fd", color: "#1565c0" }}>{label}</Box>
+              ))}
             </Box>
             <Typography sx={{ fontSize: "13px", color: "var(--color-text-secondary)", mb: 0.75, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
               {n.body}
             </Typography>
             <Typography sx={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>
-              {n.authorId?.name || "Admin"} · {fmt(n.createdAt)}
+              {n.authorId?.name && `${n.authorId.name} · `}{fmt(n.createdAt)}
             </Typography>
           </Box>
           {/* Actions: only for own notices */}
@@ -167,7 +177,7 @@ export default function TeacherNotices() {
   const [classFilter, setClassFilter] = useState(""); // My Class tab only
 
   const [openForm, setOpenForm] = useState(false);
-  const [editTarget, setEditTarget] = useState(null); // notice being edited
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -193,8 +203,6 @@ export default function TeacherNotices() {
   }, []);
 
   /* ─── query ─── */
-  // Tab 0 = School (scope=global = anything NOT class-specific)
-  // Tab 1 = My Class (scope=class — backend further restricts to teacher's classIds)
   const scope = tab === 0 ? "global" : "class";
   const queryParams = {
     page, limit: PAGE_SIZE, scope,
@@ -204,7 +212,6 @@ export default function TeacherNotices() {
     ...(tab === 1 && classFilter && { classId: classFilter }),
   };
   const { data, isLoading } = useGetNoticesPaginatedQuery(queryParams);
-  // Separate unfiltered total queries for tab badge counts
   const { data: schoolTotals } = useGetNoticesPaginatedQuery({ scope: "global", page: 1, limit: 1 });
   const { data: classTotals } = useGetNoticesPaginatedQuery({ scope: "class", page: 1, limit: 1 });
   const schoolCount = schoolTotals?.total ?? 0;
@@ -229,9 +236,8 @@ export default function TeacherNotices() {
 
   const openCreate = () => {
     setEditTarget(null);
-    // Pre-select class if teacher only has one
-    const defaultClass = teacherClasses.length === 1 ? teacherClasses[0]._id : "";
-    setForm({ ...EMPTY_FORM, classId: defaultClass });
+    const defaultClassIds = teacherClasses.length === 1 ? [teacherClasses[0]._id] : [];
+    setForm({ ...EMPTY_FORM, classIds: defaultClassIds });
     setFieldErrors({});
     setFormError("");
     setOpenForm(true);
@@ -239,12 +245,16 @@ export default function TeacherNotices() {
 
   const openEdit = (n) => {
     setEditTarget(n);
+    // Recover classIds: prefer classIds array, fall back to single classId
+    const existingClassIds = n.classIds?.length
+      ? n.classIds.map((c) => c._id || c)
+      : n.classId ? [n.classId?._id || n.classId] : [];
     setForm({
       title: n.title,
       body: n.body,
       category: n.category || "general",
       priority: n.priority || "medium",
-      classId: n.classId?._id || n.classId || "",
+      classIds: existingClassIds,
     });
     setFieldErrors({});
     setFormError("");
@@ -255,17 +265,28 @@ export default function TeacherNotices() {
     const errs = {};
     if (!form.title.trim()) errs.title = "Title is required";
     if (!form.body.trim()) errs.body = "Content is required";
-    if (!editTarget && !form.classId) errs.classId = "Select a class";
+    if (!form.classIds?.length) errs.classIds = "Select at least one class";
     setFieldErrors(errs);
     if (Object.keys(errs).length) return;
 
     try {
       if (editTarget) {
-        await updateNotice({ id: editTarget._id, title: form.title, body: form.body, category: form.category, priority: form.priority }).unwrap();
+        await updateNotice({
+          id: editTarget._id,
+          title: form.title,
+          body: form.body,
+          category: form.category,
+          priority: form.priority,
+          classIds: form.classIds,
+        }).unwrap();
       } else {
         await createNotice({
-          title: form.title, body: form.body, category: form.category,
-          priority: form.priority, scope: "class", classId: form.classId,
+          title: form.title,
+          body: form.body,
+          category: form.category,
+          priority: form.priority,
+          scope: "class",
+          classIds: form.classIds,
           schoolId: user?.schoolId,
         }).unwrap();
       }
@@ -300,7 +321,6 @@ export default function TeacherNotices() {
             )}
           </Typography>
         </Box>
-        {/* New Notice only available in My Class tab */}
         {tab === 1 && (
           <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openCreate}
             sx={{ textTransform: "none", fontSize: "13px" }}>
@@ -497,26 +517,43 @@ export default function TeacherNotices() {
           {editTarget ? "Edit Notice" : "New Class Notice"}
           {!editTarget && (
             <Typography component="span" sx={{ fontSize: "12px", fontWeight: 400, color: "var(--color-text-secondary)", ml: 1 }}>
-              visible to selected class only
+              visible to selected classes only
             </Typography>
           )}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "12px !important" }}>
-          {/* Class picker — only when creating */}
-          {!editTarget && (
-            <FormControl fullWidth size="small" error={!!fieldErrors.classId}>
-              <InputLabel>Class *</InputLabel>
-              <Select value={form.classId} label="Class *"
-                onChange={(e) => { setForm((f) => ({ ...f, classId: e.target.value })); if (fieldErrors.classId) setFieldErrors((p) => ({ ...p, classId: "" })); }}>
-                {teacherClasses.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>Grade {c.grade} {c.section || ""}</MenuItem>
-                ))}
-              </Select>
-              {fieldErrors.classId && (
-                <Typography sx={{ fontSize: "12px", color: "error.main", mt: 0.5, ml: 1.75 }}>{fieldErrors.classId}</Typography>
-              )}
-            </FormControl>
-          )}
+          {/* Class multi-select */}
+          <FormControl fullWidth size="small" error={!!fieldErrors.classIds}>
+            <InputLabel>Classes *</InputLabel>
+            <Select
+              multiple
+              value={form.classIds}
+              label="Classes *"
+              input={<OutlinedInput label="Classes *" />}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, classIds: e.target.value }));
+                if (fieldErrors.classIds) setFieldErrors((p) => ({ ...p, classIds: "" }));
+              }}
+              renderValue={(selected) =>
+                selected
+                  .map((id) => {
+                    const c = teacherClasses.find((c) => c._id === id);
+                    return c ? `Grade ${c.grade}${c.section || ""}` : id;
+                  })
+                  .join(", ")
+              }
+            >
+              {teacherClasses.map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  <Checkbox size="small" checked={form.classIds.includes(c._id)} />
+                  <MuiListItemText primary={`Grade ${c.grade} ${c.section || ""}`} />
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldErrors.classIds && (
+              <Typography sx={{ fontSize: "12px", color: "error.main", mt: 0.5, ml: 1.75 }}>{fieldErrors.classIds}</Typography>
+            )}
+          </FormControl>
 
           <TextField label="Title *" fullWidth value={form.title}
             onChange={(e) => { setForm((f) => ({ ...f, title: e.target.value })); if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: "" })); }}
@@ -544,6 +581,7 @@ export default function TeacherNotices() {
               </Select>
             </FormControl>
           </Box>
+
         </DialogContent>
         {formError && (
           <Alert severity="error" sx={{ mx: 3, mb: 1, fontSize: "13px" }}>{formError}</Alert>
